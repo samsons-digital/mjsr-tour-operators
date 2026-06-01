@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MJSR Tour Operator Engagement Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0a121d; --bg2:#0d1827; --panel:rgba(20,33,50,0.72); --panel-solid:#142132;
+  --line:rgba(120,160,200,0.16); --line-strong:rgba(120,160,200,0.3);
+  --ink:#eaf2fa; --ink-dim:#9fb4c9; --ink-faint:#6e8499;
+  --ice:#5fd3e8; --ice-deep:#2a93ad; --teal:#7fe0d4; --amber:#f5b656; --amber-deep:#d9912e;
+  --rose:#f2849b; --green:#74d99f; --violet:#a99cf0;
+  --shadow:0 18px 50px -22px rgba(0,0,0,0.75);
+  --radius:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Sora',sans-serif; color:var(--ink); background:var(--bg);
+  background-image:
+    radial-gradient(1100px 620px at 82% -8%, rgba(95,211,232,0.13), transparent 60%),
+    radial-gradient(900px 560px at 8% 4%, rgba(169,156,240,0.10), transparent 55%),
+    radial-gradient(800px 500px at 50% 108%, rgba(245,182,86,0.07), transparent 60%),
+    linear-gradient(180deg,#0a121d 0%,#0b1521 100%);
+  background-attachment:fixed; min-height:100vh; -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit}
+
+/* ---------- Layout shell ---------- */
+.shell{max-width:1320px;margin:0 auto;padding:26px 26px 70px}
+.topbar{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:14px}
+.crest{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;flex:none;
+  background:linear-gradient(150deg,#16283d 0%,#0e1c2c 100%);
+  border:1px solid var(--line-strong);box-shadow:inset 0 1px 0 rgba(255,255,255,0.06),var(--shadow);position:relative;overflow:hidden}
+.crest svg{width:30px;height:30px}
+.brand h1{font-family:'Fraunces',serif;font-weight:600;font-size:1.32rem;line-height:1.05;letter-spacing:.2px}
+.brand .sub{font-size:.7rem;letter-spacing:.32em;text-transform:uppercase;color:var(--ice);opacity:.85;margin-top:3px}
+.topbar .spacer{flex:1}
+.syncwrap{display:flex;align-items:center;gap:10px;font-size:.74rem;color:var(--ink-faint)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint);box-shadow:0 0 0 4px rgba(255,255,255,0.03)}
+.dot.live{background:var(--green);box-shadow:0 0 0 4px rgba(116,217,159,0.14)}
+.dot.err{background:var(--rose);box-shadow:0 0 0 4px rgba(242,132,155,0.14)}
+.icobtn{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--panel);
+  display:grid;place-items:center;transition:.18s;color:var(--ink-dim)}
+.icobtn:hover{border-color:var(--ice-deep);color:var(--ice);transform:translateY(-1px)}
+.icobtn svg{width:18px;height:18px}
+
+/* ---------- Tabs ---------- */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;padding:6px;border-radius:16px;
+  background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(10px);width:fit-content;max-width:100%}
+.tab{padding:9px 17px;border-radius:11px;font-size:.83rem;font-weight:500;color:var(--ink-dim);
+  display:flex;align-items:center;gap:8px;transition:.16s;white-space:nowrap}
+.tab svg{width:16px;height:16px;opacity:.8}
+.tab:hover{color:var(--ink)}
+.tab.active{background:linear-gradient(135deg,rgba(95,211,232,0.18),rgba(95,211,232,0.06));
+  color:var(--ice);box-shadow:inset 0 0 0 1px rgba(95,211,232,0.35)}
+.tab .pill{font-size:.66rem;background:rgba(245,182,86,0.16);color:var(--amber);padding:1px 7px;border-radius:20px;font-weight:600}
+
+.view{display:none;animation:fade .4s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---------- Cards / panels ---------- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  backdrop-filter:blur(11px);box-shadow:var(--shadow)}
+.section-h{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:30px 2px 14px}
+.section-h h2{font-family:'Fraunces',serif;font-weight:600;font-size:1.18rem;letter-spacing:.2px}
+.section-h .hint{font-size:.74rem;color:var(--ink-faint)}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(186px,1fr));gap:14px}
+.kpi{padding:18px 18px 16px;position:relative;overflow:hidden}
+.kpi .lab{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);display:flex;align-items:center;gap:7px}
+.kpi .lab svg{width:14px;height:14px}
+.kpi .val{font-family:'Fraunces',serif;font-weight:600;font-size:1.92rem;margin-top:9px;letter-spacing:.4px;line-height:1}
+.kpi .meta{font-size:.74rem;color:var(--ink-dim);margin-top:7px}
+.kpi::after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;
+  background:radial-gradient(circle,var(--accent,rgba(95,211,232,0.14)),transparent 70%);opacity:.7}
+.kpi.ice{--accent:rgba(95,211,232,0.18)} .kpi.amber{--accent:rgba(245,182,86,0.16)}
+.kpi.green{--accent:rgba(116,217,159,0.16)} .kpi.violet{--accent:rgba(169,156,240,0.16)}
+.kpi.rose{--accent:rgba(242,132,155,0.16)}
+
+/* charts grid */
+.grid-2{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.chart-card{padding:18px}
+.chart-card h3{font-size:.84rem;font-weight:600;color:var(--ink);margin-bottom:3px}
+.chart-card .csub{font-size:.72rem;color:var(--ink-faint);margin-bottom:14px}
+.chart-box{position:relative;height:240px}
+.chart-box.tall{height:300px}
+
+/* filter bar */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px;margin-bottom:14px}
+.filters input,.filters select{background:var(--bg2);border:1px solid var(--line);color:var(--ink);
+  padding:8px 11px;border-radius:10px;font-size:.8rem;outline:none;transition:.15s}
+.filters input:focus,.filters select:focus{border-color:var(--ice-deep);box-shadow:0 0 0 3px rgba(95,211,232,0.12)}
+.filters input[type=search]{min-width:210px}
+.filters .grow{flex:1}
+.btn{padding:8px 15px;border-radius:10px;font-size:.8rem;font-weight:500;transition:.16s;
+  border:1px solid var(--line);background:var(--panel-solid);color:var(--ink-dim);display:inline-flex;align-items:center;gap:7px}
+.btn svg{width:15px;height:15px}
+.btn:hover{border-color:var(--ice-deep);color:var(--ice)}
+.btn.primary{background:linear-gradient(135deg,var(--ice),var(--ice-deep));color:#062029;border:none;font-weight:600}
+.btn.primary:hover{filter:brightness(1.07);color:#062029}
+.btn.amber{background:linear-gradient(135deg,var(--amber),var(--amber-deep));color:#2b1c05;border:none;font-weight:600}
+.btn.amber:hover{filter:brightness(1.07);color:#2b1c05}
+.btn.ghost:hover{transform:translateY(-1px)}
+
+/* table */
+.tablewrap{overflow:auto;border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:880px}
+thead th{text-align:left;font-weight:600;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-faint);padding:13px 14px;border-bottom:1px solid var(--line-strong);position:sticky;top:0;
+  background:var(--panel-solid);cursor:pointer;white-space:nowrap;user-select:none}
+thead th .arr{opacity:.4;font-size:.7rem;margin-left:3px}
+tbody td{padding:12px 14px;border-bottom:1px solid var(--line);color:var(--ink-dim);white-space:nowrap}
+tbody tr{transition:.12s;cursor:pointer}
+tbody tr:hover{background:rgba(95,211,232,0.05)}
+tbody td.op{color:var(--ink);font-weight:500}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-faint)}
+
+/* badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:600;white-space:nowrap}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-New{background:rgba(95,211,232,0.13);color:var(--ice)}
+.b-Contacted{background:rgba(169,156,240,0.14);color:var(--violet)}
+.b-Confirmed{background:rgba(245,182,86,0.15);color:var(--amber)}
+.b-Arrived{background:rgba(116,217,159,0.15);color:var(--green)}
+.b-No-Show{background:rgba(242,132,155,0.14);color:var(--rose)}
+.b-Cancelled{background:rgba(140,160,180,0.14);color:var(--ink-faint)}
+.b-Lost{background:rgba(140,160,180,0.14);color:var(--ink-faint)}
+.tierbadge{font-size:.68rem;padding:2px 8px;border-radius:6px;border:1px solid var(--line-strong);color:var(--ink-dim)}
+.chip{font-size:.68rem;padding:2px 8px;border-radius:6px;background:rgba(120,160,200,0.1);color:var(--ink-dim);margin:1px}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(4,9,16,0.62);backdrop-filter:blur(3px);opacity:0;
+  pointer-events:none;transition:.25s;z-index:40}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(520px,94vw);background:var(--bg2);
+  border-left:1px solid var(--line-strong);box-shadow:-30px 0 60px -30px rgba(0,0,0,0.8);
+  transform:translateX(100%);transition:.3s cubic-bezier(.4,0,.2,1);z-index:50;display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.drawer-h{padding:22px 24px 18px;border-bottom:1px solid var(--line)}
+.drawer-h .vid{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ice)}
+.drawer-h h3{font-family:'Fraunces',serif;font-size:1.3rem;font-weight:600;margin-top:5px}
+.drawer-h .meta{font-size:.78rem;color:var(--ink-dim);margin-top:6px}
+.drawer-body{padding:20px 24px;overflow:auto;flex:1}
+.dfield{margin-bottom:15px}
+.dfield label{display:block;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+.dfield input,.dfield select,.dfield textarea{width:100%;background:var(--bg);border:1px solid var(--line);
+  color:var(--ink);padding:9px 12px;border-radius:10px;font-size:.84rem;outline:none}
+.dfield input:focus,.dfield select:focus,.dfield textarea:focus{border-color:var(--ice-deep);box-shadow:0 0 0 3px rgba(95,211,232,0.12)}
+.dfield textarea{resize:vertical;min-height:62px}
+.drow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.factgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin:4px 0 18px}
+.fact .k{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
+.fact .v{font-size:.88rem;color:var(--ink);margin-top:2px}
+.logbox{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:.76rem;
+  color:var(--ink-dim);white-space:pre-wrap;max-height:170px;overflow:auto;line-height:1.55}
+.drawer-foot{padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:10px}
+.drawer-foot .btn{flex:1;justify-content:center}
+
+/* operators */
+.opgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.opcard{padding:18px;transition:.16s;cursor:pointer}
+.opcard:hover{border-color:var(--ice-deep);transform:translateY(-2px)}
+.opcard .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+.opcard .nm{font-weight:600;font-size:.96rem;color:var(--ink);line-height:1.2}
+.opcard .id{font-size:.68rem;color:var(--ice);letter-spacing:.08em;margin-top:3px}
+.opcard .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.opcard .st .n{font-family:'Fraunces',serif;font-size:1.18rem;font-weight:600}
+.opcard .st .l{font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-top:1px}
+.opcard .foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--line);font-size:.74rem;color:var(--ink-dim)}
+
+/* follow-ups */
+.fucols{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.fucol h3{font-size:.82rem;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.fucol h3 .ct{font-size:.7rem;background:var(--panel-solid);border:1px solid var(--line);padding:1px 8px;border-radius:20px;color:var(--ink-dim)}
+.fucard{padding:13px 15px;margin-bottom:10px;border-left:3px solid var(--brd,var(--line-strong))}
+.fucard.over{--brd:var(--rose)} .fucard.due{--brd:var(--amber)} .fucard.up{--brd:var(--ice)} .fucard.unc{--brd:var(--violet)}
+.fucard .nm{font-weight:500;font-size:.86rem;color:var(--ink)}
+.fucard .dt{font-size:.74rem;color:var(--ink-dim);margin-top:3px}
+.fucard .act{display:flex;gap:8px;margin-top:10px}
+.fucard .act .btn{padding:5px 11px;font-size:.74rem}
+
+/* reports */
+.repcard{padding:22px}
+.rep-h{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:18px}
+.rep-title{font-family:'Fraunces',serif;font-size:1.45rem;font-weight:600}
+.rep-sub{font-size:.78rem;color:var(--ink-dim);margin-top:4px}
+.rep-section{margin:26px 0}
+.rep-section h4{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ice);margin-bottom:12px;
+  padding-bottom:8px;border-bottom:1px solid var(--line)}
+.rep-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.rep-kpi{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.rep-kpi .v{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600}
+.rep-kpi .l{font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+.rep-table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:0}
+.rep-table th{text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);padding:9px 12px;border-bottom:1px solid var(--line-strong)}
+.rep-table td{padding:9px 12px;border-bottom:1px solid var(--line);color:var(--ink-dim)}
+.rep-table td.s{color:var(--ink);font-weight:500}
+
+/* add form */
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.formgrid .full{grid-column:1/-1}
+.fg label{display:block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--ink);
+  padding:10px 12px;border-radius:10px;font-size:.85rem;outline:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--ice-deep);box-shadow:0 0 0 3px rgba(95,211,232,0.12)}
+
+/* states */
+.state{padding:60px 20px;text-align:center;color:var(--ink-dim)}
+.state svg{width:46px;height:46px;color:var(--ice-deep);margin-bottom:14px;opacity:.8}
+.state h3{font-family:'Fraunces',serif;font-size:1.2rem;color:var(--ink);margin-bottom:8px;font-weight:600}
+.state p{font-size:.86rem;max-width:420px;margin:0 auto 18px;line-height:1.6}
+.spinner{width:34px;height:34px;border:3px solid var(--line-strong);border-top-color:var(--ice);border-radius:50%;
+  animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);z-index:90;
+  background:var(--panel-solid);border:1px solid var(--line-strong);padding:12px 20px;border-radius:12px;
+  box-shadow:var(--shadow);font-size:.84rem;opacity:0;transition:.3s;display:flex;align-items:center;gap:10px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(116,217,159,0.4)} .toast.bad{border-color:rgba(242,132,155,0.4)}
+
+/* settings modal */
+.modal{position:fixed;inset:0;display:none;place-items:center;z-index:60;background:rgba(4,9,16,0.6);backdrop-filter:blur(4px)}
+.modal.open{display:grid}
+.modal .box{width:min(480px,92vw);padding:26px;background:var(--bg2);border:1px solid var(--line-strong);border-radius:18px;box-shadow:var(--shadow)}
+.modal h3{font-family:'Fraunces',serif;font-size:1.2rem;margin-bottom:6px}
+.modal p{font-size:.8rem;color:var(--ink-dim);margin-bottom:16px;line-height:1.55}
+.modal input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:11px 13px;border-radius:10px;font-size:.82rem;outline:none;margin-bottom:16px}
+.modal .row{display:flex;gap:10px;justify-content:flex-end}
+
+@media(max-width:980px){.grid-2,.grid-3,.fucols,.formgrid,.drow,.factgrid{grid-template-columns:1fr}}
+@media print{
+  body{background:#fff;color:#111}
+  .topbar,.tabs,.filters,.section-h .hint,#repControls{display:none!important}
+  .view{display:none!important}#view-reports{display:block!important}
+  .panel,.repcard{background:#fff;border:1px solid #ccc;box-shadow:none}
+  .rep-title,.rep-section h4{color:#111} .rep-kpi{background:#f6f6f6}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="crest">
+        <svg viewBox="0 0 32 32" fill="none">
+          <path d="M16 4 L28 26 H4 Z" fill="#0e1c2c" stroke="#5fd3e8" stroke-width="1.4"/>
+          <path d="M16 4 L21.5 14 L18 14 L20 18 L12 18 L14 14 L10.5 14 Z" fill="#eaf2fa"/>
+          <path d="M4 26 H28" stroke="#f5b656" stroke-width="1.4"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Tour Operator Engagement Portal</h1>
+        <div class="sub">Malam Jabba Ski Resort &middot; Samsons Group</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="syncwrap"><span class="dot" id="statusDot"></span><span id="syncText">Connecting...</span></div>
+    <button class="icobtn" id="refreshBtn" title="Refresh data">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+    </button>
+    <button class="icobtn" id="settingsBtn" title="Connection settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-view="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Overview</button>
+    <button class="tab" data-view="engagements"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Engagements <span class="pill" id="engCount">0</span></button>
+    <button class="tab" data-view="operators"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Operators</button>
+    <button class="tab" data-view="followups"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Follow-ups <span class="pill" id="fuCount">0</span></button>
+    <button class="tab" data-view="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports</button>
+    <button class="tab" data-view="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Log Engagement</button>
+  </div>
+
+  <div id="loadState" class="panel state"><div class="spinner"></div><h3>Loading engagement data</h3><p>Fetching the latest records from the Tour Operator Master sheet.</p></div>
+
+  <div id="content" style="display:none">
+
+    <!-- OVERVIEW -->
+    <section class="view active" id="view-overview">
+      <div class="kpis" id="kpiRow"></div>
+      <div class="section-h"><h2>Engagement Pipeline</h2><span class="hint">Effective figures use recorded actuals where available, otherwise estimated guests</span></div>
+      <div class="grid-2">
+        <div class="panel chart-card"><h3>Monthly Engagements &amp; Guests</h3><div class="csub">Enquiries logged and guest volume by month</div><div class="chart-box tall"><canvas id="chMonthly"></canvas></div></div>
+        <div class="panel chart-card"><h3>Organisation Mix</h3><div class="csub">Share of engagements by organisation type</div><div class="chart-box tall"><canvas id="chOrg"></canvas></div></div>
+      </div>
+      <div class="grid-2" style="margin-top:16px">
+        <div class="panel chart-card"><h3>Top 10 Operators by Guests</h3><div class="csub">Effective guest volume per operator</div><div class="chart-box tall"><canvas id="chTopOps"></canvas></div></div>
+        <div class="panel chart-card"><h3>Segment Comparison</h3><div class="csub">Tour Operators vs Schools / Colleges vs Corporate</div><div class="chart-box tall"><canvas id="chSegment"></canvas></div></div>
+      </div>
+      <div class="grid-2" style="margin-top:16px">
+        <div class="panel chart-card"><h3>Top Source Cities</h3><div class="csub">Engagements by city or region of origin</div><div class="chart-box"><canvas id="chCity"></canvas></div></div>
+        <div class="panel chart-card"><h3>Activity Interest</h3><div class="csub">Demand across resort activities</div><div class="chart-box"><canvas id="chActivity"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- ENGAGEMENTS -->
+    <section class="view" id="view-engagements">
+      <div class="panel filters">
+        <input type="search" id="fSearch" placeholder="Search operator, contact, phone, visit ID...">
+        <select id="fStatus"><option value="">All statuses</option></select>
+        <select id="fOrg"><option value="">All types</option></select>
+        <select id="fCity"><option value="">All cities</option></select>
+        <select id="fSegment"><option value="">All segments</option><option>Tour Operators</option><option>Schools / Colleges</option><option>Corporate</option><option>Private Group</option></select>
+        <input type="date" id="fFrom" title="Visit date from">
+        <input type="date" id="fTo" title="Visit date to">
+        <span class="grow"></span>
+        <button class="btn ghost" id="clearFilters">Clear</button>
+        <button class="btn" id="exportEng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</button>
+      </div>
+      <div class="panel tablewrap">
+        <table id="engTable">
+          <thead><tr>
+            <th data-sort="visitId">Visit ID</th>
+            <th data-sort="operator">Operator</th>
+            <th data-sort="orgType">Type</th>
+            <th data-sort="city">City</th>
+            <th data-sort="visitDate">Visit Date</th>
+            <th data-sort="effectiveGuests" class="num">Guests</th>
+            <th data-sort="effectiveRevenue" class="num">Revenue</th>
+            <th data-sort="status">Status</th>
+            <th data-sort="followUp">Follow-up</th>
+          </tr></thead>
+          <tbody id="engBody"></tbody>
+        </table>
+      </div>
+      <div class="section-h"><span class="hint" id="engSummary"></span></div>
+    </section>
+
+    <!-- OPERATORS -->
+    <section class="view" id="view-operators">
+      <div class="panel filters">
+        <input type="search" id="opSearch" placeholder="Search operator name or city...">
+        <select id="opSort">
+          <option value="revenue">Sort: Total Revenue</option>
+          <option value="guests">Sort: Total Guests</option>
+          <option value="visits">Sort: Total Visits</option>
+          <option value="name">Sort: Name (A-Z)</option>
+        </select>
+        <span class="grow"></span>
+        <span class="hint" id="opSummary"></span>
+      </div>
+      <div class="opgrid" id="opGrid"></div>
+    </section>
+
+    <!-- FOLLOW-UPS -->
+    <section class="view" id="view-followups">
+      <div class="section-h"><h2>Action Queue</h2><span class="hint">Scheduled follow-ups and operators awaiting first contact</span></div>
+      <div class="fucols">
+        <div class="fucol"><h3 style="color:var(--rose)">Overdue <span class="ct" id="ctOver">0</span></h3><div id="colOver"></div></div>
+        <div class="fucol"><h3 style="color:var(--amber)">Due / Upcoming <span class="ct" id="ctDue">0</span></h3><div id="colDue"></div></div>
+        <div class="fucol"><h3 style="color:var(--violet)">Awaiting First Contact <span class="ct" id="ctUnc">0</span></h3><div id="colUnc"></div></div>
+      </div>
+    </section>
+
+    <!-- REPORTS -->
+    <section class="view" id="view-reports">
+      <div class="panel filters" id="repControls">
+        <label style="font-size:.78rem;color:var(--ink-faint)">Period</label>
+        <input type="date" id="repFrom"><span style="color:var(--ink-faint)">to</span><input type="date" id="repTo">
+        <select id="repPreset">
+          <option value="all">All time</option>
+          <option value="season">Current season (Dec-Mar)</option>
+          <option value="ytd">This calendar year</option>
+          <option value="custom">Custom</option>
+        </select>
+        <span class="grow"></span>
+        <button class="btn" id="repExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</button>
+        <button class="btn primary" id="repPrint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>
+      </div>
+      <div class="panel repcard" id="repCard"></div>
+    </section>
+
+    <!-- ADD -->
+    <section class="view" id="view-add">
+      <div class="section-h"><h2>Log a New Engagement</h2><span class="hint">Walk-in, phone enquiry, or event lead. A Visit ID is assigned automatically.</span></div>
+      <div class="panel repcard" style="max-width:880px">
+        <div class="formgrid">
+          <div class="fg"><label>Operator / School / Group name *</label><input id="aName" placeholder="e.g. Ghoomo Phiro Pakistan"></div>
+          <div class="fg"><label>Organisation type</label><select id="aOrg"><option>Tour Operator</option><option>College / University</option><option>School</option><option>Corporate</option><option>Private Group Organizer</option><option>Other</option></select></div>
+          <div class="fg"><label>Contact person</label><input id="aContact" placeholder="Full name"></div>
+          <div class="fg"><label>Phone (WhatsApp)</label><input id="aPhone" placeholder="03xx xxxxxxx"></div>
+          <div class="fg"><label>Email</label><input id="aEmail" placeholder="optional"></div>
+          <div class="fg"><label>City / Region</label><input id="aCity" placeholder="e.g. Lahore"></div>
+          <div class="fg"><label>Expected visit date</label><input type="date" id="aVisit"></div>
+          <div class="fg"><label>Estimated guests</label><input type="number" id="aGuests" min="0" placeholder="e.g. 40"></div>
+          <div class="fg"><label>Guest type</label><input id="aGuestType" placeholder="e.g. Students, Families"></div>
+          <div class="fg"><label>Activities</label><input id="aActivity" placeholder="e.g. Chairlift, Zipline" value="Chairlift"></div>
+          <div class="fg"><label>Discount requested (decimal)</label><input type="number" id="aDiscount" step="0.05" min="0" max="1" value="0.1"></div>
+          <div class="fg"><label>Previously visited?</label><select id="aPrev"><option>No</option><option>Yes</option></select></div>
+          <div class="fg"><label>Tier</label><select id="aTier"><option>Basic</option><option>Bronze</option><option>Silver</option><option>Gold</option></select></div>
+          <div class="fg"><label>Owner / handler</label><input id="aOwner" placeholder="e.g. BDM"></div>
+          <div class="fg full"><label>Notes</label><textarea id="aNotes" rows="2" placeholder="Context, special requests, lead source..."></textarea></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end">
+          <button class="btn ghost" id="aReset">Reset</button>
+          <button class="btn amber" id="aSubmit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Create Engagement</button>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /content -->
+</div><!-- /shell -->
+
+<!-- DRAWER -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-h">
+    <div class="vid" id="dVid"></div>
+    <h3 id="dName"></h3>
+    <div class="meta" id="dMeta"></div>
+  </div>
+  <div class="drawer-body" id="dBody"></div>
+  <div class="drawer-foot">
+    <button class="btn ghost" id="dLog">Log Contact</button>
+    <button class="btn primary" id="dSave">Save Changes</button>
+  </div>
+</aside>
+
+<!-- SETTINGS MODAL -->
+<div class="modal" id="modal">
+  <div class="box">
+    <h3>Connection Settings</h3>
+    <p>Paste the Web App URL from your Apps Script deployment (ends in <code>/exec</code>). It is stored only in this browser.</p>
+    <input id="apiInput" placeholder="https://script.google.com/macros/s/.../exec">
+    <div class="row"><button class="btn ghost" id="modalCancel">Cancel</button><button class="btn primary" id="modalSave">Save &amp; Connect</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   MJSR TOUR OPERATOR ENGAGEMENT PORTAL  -  front end
+   Paste your Apps Script /exec URL below, or use the gear icon.
+   ============================================================ */
+const API_URL = "https://script.google.com/macros/s/AKfycbxNABmKpkwU-d-12_rPp64PySQEht7LqXLyjqP6spfzpdCSOih-quGt0VZZTIAHfb6v/exec";
+
+const LS_KEY = "mjsr_to_portal_api";
+let apiUrl = API_URL || localStorage.getItem(LS_KEY) || "";
+let DATA = { engagements: [], ticketPrice: 2300, validStatus: ["New","Contacted","Confirmed","Arrived","No-Show","Cancelled","Lost"] };
+let charts = {};
+let engSort = { key: "timestamp", dir: -1 };
+let activeVid = null;
+
+const $ = id => document.getElementById(id);
+const fmtN = n => (Number(n)||0).toLocaleString("en-US");
+const fmtPKR = n => "PKR " + (Number(n)||0).toLocaleString("en-US");
+const fmtPKRk = n => { n=Number(n)||0; if(n>=1e6) return "PKR "+(n/1e6).toFixed(2)+"M"; if(n>=1e3) return "PKR "+(n/1e3).toFixed(0)+"k"; return "PKR "+n; };
+function dOnly(iso){ if(!iso) return ""; const d=new Date(iso); if(isNaN(d)) return ""; return d.toISOString().slice(0,10); }
+function dPretty(iso){ if(!iso) return "\u2014"; const d=new Date(iso); if(isNaN(d)) return "\u2014"; return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+function segmentOf(orgType){
+  const t=(orgType||"").toLowerCase();
+  if(t.indexOf("college")>=0||t.indexOf("university")>=0||t.indexOf("school")>=0) return "Schools / Colleges";
+  if(t.indexOf("corporate")>=0) return "Corporate";
+  if(t.indexOf("private")>=0) return "Private Group";
+  if(t.indexOf("tour")>=0) return "Tour Operators";
+  return "Other";
+}
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(msg, kind){
+  const el=$("toast"); el.textContent=msg; el.className="toast show "+(kind||"");
+  clearTimeout(toastT); toastT=setTimeout(()=>el.className="toast "+(kind||""),2600);
+}
+
+/* ---------- networking ---------- */
+async function loadData(){
+  if(!apiUrl){ showNotConfigured(); return; }
+  setSync("connecting");
+  try{
+    const res = await fetch(apiUrl, { method:"GET" });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error||"Server error");
+    DATA = json.data;
+    setSync("live");
+    $("loadState").style.display="none";
+    $("content").style.display="block";
+    renderAll();
+  }catch(err){
+    setSync("error");
+    showError(err.message);
+  }
+}
+
+async function postAction(payload){
+  if(!apiUrl) throw new Error("Not connected");
+  const res = await fetch(apiUrl, {
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error||"Server error");
+  if(json.data){ DATA = json.data; renderAll(); }
+  return json.result;
+}
+
+function setSync(state){
+  const dot=$("statusDot"), txt=$("syncText");
+  if(state==="live"){ dot.className="dot live"; txt.textContent="Live \u00b7 "+(DATA.count||DATA.engagements.length)+" records"; }
+  else if(state==="error"){ dot.className="dot err"; txt.textContent="Connection error"; }
+  else { dot.className="dot"; txt.textContent="Connecting..."; }
+}
+
+function showNotConfigured(){
+  $("loadState").innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'+
+    '<h3>Connect the portal</h3>'+
+    '<p>Deploy the Apps Script as a Web App and paste the <b>/exec</b> URL to start tracking tour operator engagements.</p>'+
+    '<button class="btn primary" onclick="openModal()">Add Web App URL</button>';
+  $("loadState").style.display="block"; $("content").style.display="none";
+}
+function showError(msg){
+  $("loadState").innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'+
+    '<h3>Could not load data</h3><p>'+msg+'</p>'+
+    '<button class="btn primary" onclick="loadData()">Retry</button> '+
+    '<button class="btn ghost" onclick="openModal()">Check URL</button>';
+  $("loadState").style.display="block"; $("content").style.display="none";
+}
+
+/* ---------- modal ---------- */
+function openModal(){ $("apiInput").value=apiUrl; $("modal").classList.add("open"); }
+function closeModal(){ $("modal").classList.remove("open"); }
+$("settingsBtn").onclick=openModal;
+$("modalCancel").onclick=closeModal;
+$("modalSave").onclick=()=>{ const v=$("apiInput").value.trim(); if(!v){toast("Enter a URL","bad");return;} apiUrl=v; localStorage.setItem(LS_KEY,v); closeModal(); loadData(); };
+$("refreshBtn").onclick=()=>{ toast("Refreshing..."); loadData(); };
+
+/* ---------- tabs ---------- */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    $("view-"+t.dataset.view).classList.add("active");
+    if(t.dataset.view==="overview") setTimeout(renderCharts,60);
+  };
+});
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderAll(){
+  setSync("live");
+  $("engCount").textContent = DATA.engagements.length;
+  populateFilters();
+  renderKPIs();
+  renderCharts();
+  renderEngTable();
+  renderOperators();
+  renderFollowups();
+  initReports();
+}
+
+/* ----- KPIs ----- */
+function renderKPIs(){
+  const e=DATA.engagements;
+  const ops=new Set(e.map(x=>x.operatorId||x.operatorKey||x.operator)).size;
+  const totalGuests=e.reduce((s,x)=>s+(x.effectiveGuests||0),0);
+  const totalRev=e.reduce((s,x)=>s+(x.effectiveRevenue||0),0);
+  const arrived=e.filter(x=>x.status==="Arrived");
+  const arrivedRev=arrived.reduce((s,x)=>s+(x.effectiveRevenue||0),0);
+  const confirmed=e.filter(x=>x.status==="Confirmed"||x.status==="Arrived").length;
+  const newCount=e.filter(x=>x.status==="New").length;
+  const fu=followupBuckets();
+  const convRate = e.length? Math.round(arrived.length/e.length*100):0;
+
+  const cards=[
+    {c:"ice",   l:"Unique Operators", v:fmtN(ops),         m:e.length+" total engagements", ic:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>'},
+    {c:"amber", l:"Pipeline Guests",  v:fmtN(totalGuests), m:"effective guest volume", ic:'<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/>'},
+    {c:"green", l:"Projected Revenue",v:fmtPKRk(totalRev), m:"@ PKR "+fmtN(DATA.ticketPrice)+" / guest", ic:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>'},
+    {c:"violet",l:"Confirmed Revenue",v:fmtPKRk(arrivedRev),m:arrived.length+" arrived groups", ic:'<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'},
+    {c:"ice",   l:"Conversion",       v:convRate+"%",      m:"engagements marked arrived", ic:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'},
+    {c:"rose",  l:"Open Follow-ups",  v:fmtN(fu.over.length+fu.due.length), m:fu.over.length+" overdue", ic:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'},
+    {c:"amber", l:"Awaiting Contact", v:fmtN(fu.unc.length), m:newCount+" new enquiries", ic:'<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>'}
+  ];
+  $("kpiRow").innerHTML = cards.map(k=>
+    '<div class="panel kpi '+k.c+'"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+k.ic+'</svg>'+k.l+'</div><div class="val">'+k.v+'</div><div class="meta">'+k.m+'</div></div>'
+  ).join("");
+}
+
+/* ----- charts ----- */
+const CHART_FONT="Sora, sans-serif";
+const PAL=["#5fd3e8","#f5b656","#74d99f","#a99cf0","#f2849b","#7fe0d4","#e2a0d6","#94b8e8"];
+function gridColor(){return "rgba(120,160,200,0.1)";}
+function tickColor(){return "#9fb4c9";}
+function baseOpts(extra){
+  return Object.assign({responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:tickColor(),font:{family:CHART_FONT,size:11},boxWidth:12,padding:12}}},
+  },extra||{});
+}
+function destroyCharts(){ Object.values(charts).forEach(c=>c&&c.destroy()); charts={}; }
+
+function renderCharts(){
+  if(typeof Chart==="undefined") return;
+  destroyCharts();
+  const e=DATA.engagements;
+
+  // Monthly
+  const byMonth={};
+  e.forEach(x=>{ const m=dOnly(x.timestamp).slice(0,7); if(!m) return; byMonth[m]=byMonth[m]||{c:0,g:0}; byMonth[m].c++; byMonth[m].g+=x.effectiveGuests||0; });
+  const months=Object.keys(byMonth).sort();
+  charts.m=new Chart($("chMonthly"),{data:{labels:months.map(m=>{const d=new Date(m+"-01");return d.toLocaleDateString("en-GB",{month:"short",year:"2-digit"});}),
+    datasets:[
+      {type:"bar",label:"Guests",data:months.map(m=>byMonth[m].g),backgroundColor:"rgba(95,211,232,0.55)",borderRadius:6,yAxisID:"y"},
+      {type:"line",label:"Engagements",data:months.map(m=>byMonth[m].c),borderColor:"#f5b656",backgroundColor:"#f5b656",tension:.35,borderWidth:2,pointRadius:3,yAxisID:"y1"}
+    ]},
+    options:baseOpts({scales:{
+      x:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10}}},
+      y:{position:"left",grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT}},title:{display:true,text:"Guests",color:tickColor()}},
+      y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:tickColor(),font:{family:CHART_FONT}},title:{display:true,text:"Engagements",color:tickColor()}}
+    }})});
+
+  // Org doughnut
+  const byOrg={}; e.forEach(x=>{const o=x.orgType||"Other";byOrg[o]=(byOrg[o]||0)+1;});
+  const orgK=Object.keys(byOrg).sort((a,b)=>byOrg[b]-byOrg[a]);
+  charts.o=new Chart($("chOrg"),{type:"doughnut",data:{labels:orgK,datasets:[{data:orgK.map(k=>byOrg[k]),backgroundColor:PAL,borderColor:"#0d1827",borderWidth:2}]},
+    options:baseOpts({cutout:"58%",plugins:{legend:{position:"bottom",labels:{color:tickColor(),font:{family:CHART_FONT,size:11},boxWidth:11,padding:10}}}})});
+
+  // Top operators by guests
+  const opAgg={};
+  e.forEach(x=>{const k=x.operatorId||x.operator;opAgg[k]=opAgg[k]||{name:x.operator,g:0};opAgg[k].g+=x.effectiveGuests||0;});
+  const topOps=Object.values(opAgg).sort((a,b)=>b.g-a.g).slice(0,10);
+  charts.t=new Chart($("chTopOps"),{type:"bar",data:{labels:topOps.map(o=>o.name.length>22?o.name.slice(0,21)+"\u2026":o.name),
+    datasets:[{label:"Guests",data:topOps.map(o=>o.g),backgroundColor:"rgba(245,182,86,0.7)",borderRadius:5}]},
+    options:baseOpts({indexAxis:"y",plugins:{legend:{display:false}},scales:{
+      x:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10}}},
+      y:{grid:{display:false},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10}}}}})});
+
+  // Segment comparison
+  const seg={}; e.forEach(x=>{const s=segmentOf(x.orgType);seg[s]=seg[s]||{groups:0,guests:0,rev:0};seg[s].groups++;seg[s].guests+=x.effectiveGuests||0;seg[s].rev+=x.effectiveRevenue||0;});
+  const segK=["Tour Operators","Schools / Colleges","Corporate","Private Group"].filter(k=>seg[k]);
+  charts.s=new Chart($("chSegment"),{type:"bar",data:{labels:segK,datasets:[
+      {label:"Guests",data:segK.map(k=>seg[k].guests),backgroundColor:"rgba(95,211,232,0.7)",borderRadius:5,yAxisID:"y"},
+      {label:"Revenue (PKR)",data:segK.map(k=>seg[k].rev),backgroundColor:"rgba(116,217,159,0.6)",borderRadius:5,yAxisID:"y1"}
+    ]},
+    options:baseOpts({scales:{
+      x:{grid:{display:false},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10}}},
+      y:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT}}},
+      y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:tickColor(),font:{family:CHART_FONT},callback:v=>(v/1e6).toFixed(1)+"M"}}
+    }})});
+
+  // Cities
+  const byCity={}; e.forEach(x=>{const c=(x.city||"Unknown").trim();if(!c)return;const key=c.charAt(0).toUpperCase()+c.slice(1).toLowerCase();byCity[key]=(byCity[key]||0)+1;});
+  const cityK=Object.keys(byCity).sort((a,b)=>byCity[b]-byCity[a]).slice(0,9);
+  charts.c=new Chart($("chCity"),{type:"bar",data:{labels:cityK,datasets:[{label:"Engagements",data:cityK.map(k=>byCity[k]),backgroundColor:"rgba(169,156,240,0.7)",borderRadius:5}]},
+    options:baseOpts({plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10}}},y:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT}}}}})});
+
+  // Activities
+  const byAct={}; e.forEach(x=>{(x.activity||"").split(",").forEach(a=>{a=a.trim();if(!a)return;byAct[a]=(byAct[a]||0)+1;});});
+  const actK=Object.keys(byAct).sort((a,b)=>byAct[b]-byAct[a]);
+  charts.a=new Chart($("chActivity"),{type:"doughnut",data:{labels:actK,datasets:[{data:actK.map(k=>byAct[k]),backgroundColor:PAL,borderColor:"#0d1827",borderWidth:2}]},
+    options:baseOpts({cutout:"58%",plugins:{legend:{position:"bottom",labels:{color:tickColor(),font:{family:CHART_FONT,size:10},boxWidth:10,padding:8}}}})});
+}
+
+/* ----- filters ----- */
+function populateFilters(){
+  const e=DATA.engagements;
+  const st=$("fStatus"); const cur=st.value;
+  st.innerHTML='<option value="">All statuses</option>'+DATA.validStatus.map(s=>'<option>'+s+'</option>').join(""); st.value=cur;
+  const orgs=[...new Set(e.map(x=>x.orgType).filter(Boolean))].sort();
+  const og=$("fOrg"); const cur2=og.value; og.innerHTML='<option value="">All types</option>'+orgs.map(o=>'<option>'+o+'</option>').join(""); og.value=cur2;
+  const cities=[...new Set(e.map(x=>x.city.trim()).filter(Boolean))].sort();
+  const cg=$("fCity"); const cur3=cg.value; cg.innerHTML='<option value="">All cities</option>'+cities.map(c=>'<option>'+c+'</option>').join(""); cg.value=cur3;
+}
+["fSearch","fStatus","fOrg","fCity","fSegment","fFrom","fTo"].forEach(id=>$(id).addEventListener("input",renderEngTable));
+$("clearFilters").onclick=()=>{["fSearch","fStatus","fOrg","fCity","fSegment","fFrom","fTo"].forEach(id=>$(id).value="");renderEngTable();};
+
+function getFilteredEng(){
+  const q=$("fSearch").value.toLowerCase().trim();
+  const st=$("fStatus").value, org=$("fOrg").value, city=$("fCity").value, seg=$("fSegment").value;
+  const from=$("fFrom").value, to=$("fTo").value;
+  return DATA.engagements.filter(x=>{
+    if(q){const hay=(x.operator+" "+x.contact+" "+x.phone+" "+x.visitId+" "+x.operatorId).toLowerCase();if(hay.indexOf(q)<0)return false;}
+    if(st && x.status!==st) return false;
+    if(org && x.orgType!==org) return false;
+    if(city && x.city.trim()!==city) return false;
+    if(seg && segmentOf(x.orgType)!==seg) return false;
+    const vd=dOnly(x.visitDate);
+    if(from && vd && vd<from) return false;
+    if(to && vd && vd>to) return false;
+    return true;
+  });
+}
+
+document.querySelectorAll("#engTable thead th").forEach(th=>{
+  th.onclick=()=>{const k=th.dataset.sort;if(engSort.key===k)engSort.dir*=-1;else{engSort.key=k;engSort.dir=1;}renderEngTable();};
+});
+
+function renderEngTable(){
+  let rows=getFilteredEng();
+  const k=engSort.key,dir=engSort.dir;
+  rows.sort((a,b)=>{let va=a[k],vb=b[k];
+    if(k==="visitDate"||k==="followUp"||k==="timestamp"){va=va||"";vb=vb||"";}
+    if(typeof va==="number"){return (va-vb)*dir;}
+    return String(va).localeCompare(String(vb))*dir;});
+  const body=$("engBody");
+  if(!rows.length){ body.innerHTML='<tr><td colspan="9" class="state" style="padding:40px">No engagements match these filters.</td></tr>'; $("engSummary").textContent=""; return; }
+  body.innerHTML=rows.map(x=>{
+    const act=(x.activity||"").split(",").slice(0,2).map(a=>'<span class="chip">'+a.trim()+'</span>').join("");
+    return '<tr onclick="openDrawer(\''+x.visitId+'\')">'+
+      '<td class="muted">'+ (x.visitId||"\u2014") +'</td>'+
+      '<td class="op">'+x.operator+(x.prevVisit==="Yes"?' <span class="chip" style="color:var(--green)">repeat</span>':'')+'</td>'+
+      '<td>'+x.orgType+'</td>'+
+      '<td>'+(x.city||"\u2014")+'</td>'+
+      '<td>'+dPretty(x.visitDate)+'</td>'+
+      '<td class="num">'+fmtN(x.effectiveGuests)+(x.hasActual?' <span class="chip" style="color:var(--green)">actual</span>':'')+'</td>'+
+      '<td class="num">'+fmtN(x.effectiveRevenue)+'</td>'+
+      '<td><span class="badge b-'+x.status+'">'+x.status+'</span></td>'+
+      '<td>'+(x.followUp?dPretty(x.followUp):'<span class="muted">\u2014</span>')+'</td>'+
+    '</tr>';
+  }).join("");
+  const g=rows.reduce((s,x)=>s+x.effectiveGuests,0), r=rows.reduce((s,x)=>s+x.effectiveRevenue,0);
+  $("engSummary").textContent=rows.length+" engagements \u00b7 "+fmtN(g)+" guests \u00b7 "+fmtPKR(r)+" projected";
+}
+
+$("exportEng").onclick=()=>exportCSV(getFilteredEng(),"mjsr_engagements");
+
+/* ----- drawer ----- */
+function openDrawer(vid){
+  const x=DATA.engagements.find(e=>e.visitId===vid); if(!x) return;
+  activeVid=vid;
+  $("dVid").textContent=(x.visitId||"")+(x.operatorId?"  \u00b7  "+x.operatorId:"");
+  $("dName").textContent=x.operator;
+  $("dMeta").textContent=x.orgType+(x.city?" \u00b7 "+x.city:"")+" \u00b7 "+(x.source||"Form");
+  const statusOpts=DATA.validStatus.map(s=>'<option'+(s===x.status?' selected':'')+'>'+s+'</option>').join("");
+  const tiers=["Basic","Bronze","Silver","Gold"].map(t=>'<option'+(t===x.tier?' selected':'')+'>'+t+'</option>').join("");
+  $("dBody").innerHTML=
+    '<div class="factgrid">'+
+      fact("Contact",x.contact||"\u2014")+fact("Phone",x.phone||"\u2014")+
+      fact("Visit Date",dPretty(x.visitDate))+fact("Logged",dPretty(x.timestamp))+
+      fact("Estimated Guests",fmtN(x.estimated))+fact("Guest Type",x.guestType||"\u2014")+
+      fact("Activities",x.activity||"\u2014")+fact("Discount",Math.round((x.discountRate||0)*100)+"%")+
+      fact("Effective Revenue",fmtPKR(x.effectiveRevenue))+fact("Previous Visit",x.prevVisit||"\u2014")+
+    '</div>'+
+    '<div class="dfield"><label>Status</label><select id="edStatus">'+statusOpts+'</select></div>'+
+    '<div class="drow">'+
+      '<div class="dfield"><label>Tier</label><select id="edTier">'+tiers+'</select></div>'+
+      '<div class="dfield"><label>Owner</label><input id="edOwner" value="'+esc(x.owner)+'" placeholder="handler"></div>'+
+    '</div>'+
+    '<div class="drow">'+
+      '<div class="dfield"><label>Actual Arrived (override)</label><input type="number" id="edActual" value="'+(x.actualOverride!==""?x.actualOverride:"")+'" placeholder="blank = use estimate"></div>'+
+      '<div class="dfield"><label>Follow-up Date</label><input type="date" id="edFollow" value="'+dOnly(x.followUp)+'"></div>'+
+    '</div>'+
+    '<div class="dfield"><label>Add a contact / activity note</label><textarea id="edNote" placeholder="e.g. Called, confirmed 40 pax for Saturday"></textarea></div>'+
+    '<div class="dfield"><label>Engagement Log'+(x.lastContact?'  \u00b7  last contact '+dPretty(x.lastContact):'')+'</label><div class="logbox">'+(x.log?esc(x.log):'No activity logged yet.')+'</div></div>';
+  $("scrim").classList.add("open"); $("drawer").classList.add("open");
+}
+function fact(k,v){return '<div class="fact"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function closeDrawer(){ $("scrim").classList.remove("open"); $("drawer").classList.remove("open"); activeVid=null; }
+$("scrim").onclick=closeDrawer;
+
+$("dSave").onclick=async()=>{
+  if(!activeVid) return;
+  const btn=$("dSave"); btn.textContent="Saving..."; btn.disabled=true;
+  try{
+    await postAction({action:"updateEngagement",visitId:activeVid,
+      status:$("edStatus").value, tier:$("edTier").value, owner:$("edOwner").value,
+      actualOverride:$("edActual").value, followUp:$("edFollow").value,
+      note:$("edNote").value });
+    toast("Engagement updated","ok"); closeDrawer();
+  }catch(err){ toast("Save failed: "+err.message,"bad"); }
+  btn.textContent="Save Changes"; btn.disabled=false;
+};
+$("dLog").onclick=async()=>{
+  if(!activeVid) return;
+  const note=$("edNote").value.trim()||"Contacted";
+  try{ await postAction({action:"logContact",visitId:activeVid,note:note,advanceToContacted:true});
+    toast("Contact logged","ok"); openDrawer(activeVid);
+  }catch(err){ toast("Failed: "+err.message,"bad"); }
+};
+
+/* ----- operators ----- */
+function operatorAggregates(){
+  const map={};
+  DATA.engagements.forEach(x=>{
+    const id=x.operatorId||("key:"+(x.operatorKey||x.operator.toLowerCase()));
+    if(!map[id]) map[id]={id:x.operatorId||"\u2014",name:x.operator,contact:x.contact,phone:x.phone,city:x.city,
+      visits:0,guests:0,revenue:0,tier:x.tier,last:"",statuses:{}};
+    const o=map[id];
+    o.visits++; o.guests+=x.effectiveGuests||0; o.revenue+=x.effectiveRevenue||0;
+    o.statuses[x.status]=(o.statuses[x.status]||0)+1;
+    const vd=x.visitDate||x.timestamp; if(vd && (!o.last || vd>o.last)) o.last=vd;
+    if(x.contact && !o.contact) o.contact=x.contact;
+    if(x.phone && !o.phone) o.phone=x.phone;
+  });
+  return Object.values(map).map(o=>{o.avg=o.visits?Math.round(o.guests/o.visits):0;return o;});
+}
+$("opSearch").addEventListener("input",renderOperators);
+$("opSort").addEventListener("change",renderOperators);
+function renderOperators(){
+  let ops=operatorAggregates();
+  const q=$("opSearch").value.toLowerCase().trim();
+  if(q) ops=ops.filter(o=>(o.name+" "+o.city).toLowerCase().indexOf(q)>=0);
+  const sort=$("opSort").value;
+  ops.sort((a,b)=> sort==="name"? a.name.localeCompare(b.name)
+    : sort==="visits"? b.visits-a.visits
+    : sort==="guests"? b.guests-a.guests : b.revenue-a.revenue);
+  $("opSummary").textContent=ops.length+" operators";
+  $("opGrid").innerHTML=ops.map(o=>
+    '<div class="panel opcard" onclick="drillOperator(\''+esc(o.name).replace(/'/g,"")+'\')">'+
+      '<div class="top"><div><div class="nm">'+esc(o.name)+'</div><div class="id">'+o.id+'</div></div><span class="tierbadge">'+o.tier+'</span></div>'+
+      '<div class="stats">'+
+        '<div class="st"><div class="n">'+o.visits+'</div><div class="l">Visits</div></div>'+
+        '<div class="st"><div class="n">'+fmtN(o.guests)+'</div><div class="l">Guests</div></div>'+
+        '<div class="st"><div class="n">'+fmtPKRk(o.revenue).replace("PKR ","")+'</div><div class="l">Revenue</div></div>'+
+      '</div>'+
+      '<div class="foot"><span>'+(o.city||"\u2014")+'</span><span>Last: '+dPretty(o.last)+'</span></div>'+
+    '</div>').join("") || '<div class="state">No operators found.</div>';
+}
+function drillOperator(name){
+  document.querySelector('.tab[data-view="engagements"]').click();
+  $("fSearch").value=name; renderEngTable();
+}
+
+/* ----- follow-ups ----- */
+function followupBuckets(){
+  const t=todayStr();
+  const over=[],due=[],unc=[];
+  DATA.engagements.forEach(x=>{
+    if(["Arrived","Cancelled","Lost","No-Show"].indexOf(x.status)>=0) return;
+    const f=dOnly(x.followUp);
+    if(f){ if(f<t) over.push(x); else due.push(x); }
+    else if(x.status==="New" && !x.lastContact){ unc.push(x); }
+  });
+  over.sort((a,b)=>dOnly(a.followUp).localeCompare(dOnly(b.followUp)));
+  due.sort((a,b)=>dOnly(a.followUp).localeCompare(dOnly(b.followUp)));
+  unc.sort((a,b)=>(b.estimated||0)-(a.estimated||0));
+  return {over,due,unc};
+}
+function renderFollowups(){
+  const {over,due,unc}=followupBuckets();
+  $("fuCount").textContent=over.length+due.length;
+  $("ctOver").textContent=over.length; $("ctDue").textContent=due.length; $("ctUnc").textContent=unc.length;
+  $("colOver").innerHTML = over.map(x=>fuCard(x,"over","Follow-up "+dPretty(x.followUp))).join("")||emptyFu("Nothing overdue");
+  $("colDue").innerHTML  = due.map(x=>fuCard(x,"due","Follow-up "+dPretty(x.followUp))).join("")||emptyFu("Nothing scheduled");
+  $("colUnc").innerHTML  = unc.slice(0,40).map(x=>fuCard(x,"unc",fmtN(x.estimated)+" guests \u00b7 logged "+dPretty(x.timestamp))).join("")||emptyFu("All contacted");
+}
+function fuCard(x,cls,line){
+  return '<div class="panel fucard '+cls+'">'+
+    '<div class="nm">'+esc(x.operator)+' <span class="badge b-'+x.status+'" style="margin-left:6px">'+x.status+'</span></div>'+
+    '<div class="dt">'+esc(x.contact||"")+(x.phone?' \u00b7 '+esc(x.phone):'')+'</div>'+
+    '<div class="dt">'+line+'</div>'+
+    '<div class="act"><button class="btn" onclick="openDrawer(\''+x.visitId+'\')">Open</button>'+
+      '<button class="btn ghost" onclick="quickContact(\''+x.visitId+'\')">Mark contacted</button></div>'+
+  '</div>';
+}
+function emptyFu(t){return '<div class="state" style="padding:30px"><p style="margin:0">'+t+'</p></div>';}
+async function quickContact(vid){
+  try{ await postAction({action:"logContact",visitId:vid,note:"Contacted (queue)",advanceToContacted:true}); toast("Marked contacted","ok"); }
+  catch(err){ toast("Failed: "+err.message,"bad"); }
+}
+
+/* ----- reports ----- */
+function initReports(){
+  if(!$("repFrom").value && !$("repTo").value){
+    const ds=DATA.engagements.map(x=>dOnly(x.timestamp)).filter(Boolean).sort();
+    if(ds.length){ $("repFrom").value=ds[0]; $("repTo").value=ds[ds.length-1]; }
+  }
+  buildReport();
+}
+$("repPreset").addEventListener("change",()=>{
+  const p=$("repPreset").value; const now=new Date();
+  if(p==="all"){ const ds=DATA.engagements.map(x=>dOnly(x.timestamp)).filter(Boolean).sort(); if(ds.length){$("repFrom").value=ds[0];$("repTo").value=ds[ds.length-1];} }
+  else if(p==="ytd"){ $("repFrom").value=now.getFullYear()+"-01-01"; $("repTo").value=todayStr(); }
+  else if(p==="season"){ const y=now.getMonth()<6?now.getFullYear()-1:now.getFullYear(); $("repFrom").value=y+"-12-01"; $("repTo").value=(y+1)+"-03-31"; }
+  buildReport();
+});
+["repFrom","repTo"].forEach(id=>$(id).addEventListener("change",()=>{$("repPreset").value="custom";buildReport();}));
+$("repPrint").onclick=()=>window.print();
+$("repExport").onclick=()=>exportCSV(reportRows(),"mjsr_operator_report");
+
+function reportRows(){
+  const from=$("repFrom").value,to=$("repTo").value;
+  return DATA.engagements.filter(x=>{const d=dOnly(x.timestamp);if(from&&d&&d<from)return false;if(to&&d&&d>to)return false;return true;});
+}
+function buildReport(){
+  const rows=reportRows();
+  const from=$("repFrom").value,to=$("repTo").value;
+  const ops=new Set(rows.map(x=>x.operatorId||x.operator)).size;
+  const guests=rows.reduce((s,x)=>s+x.effectiveGuests,0);
+  const rev=rows.reduce((s,x)=>s+x.effectiveRevenue,0);
+  const arrived=rows.filter(x=>x.status==="Arrived").length;
+
+  // segment table
+  const seg={}; rows.forEach(x=>{const s=segmentOf(x.orgType);seg[s]=seg[s]||{groups:0,guests:0,rev:0};seg[s].groups++;seg[s].guests+=x.effectiveGuests;seg[s].rev+=x.effectiveRevenue;});
+  const segRows=Object.keys(seg).sort((a,b)=>seg[b].rev-seg[a].rev).map(k=>{const s=seg[k];
+    return '<tr><td class="s">'+k+'</td><td class="num">'+s.groups+'</td><td class="num">'+fmtN(s.guests)+'</td><td class="num">'+(s.groups?Math.round(s.guests/s.groups):0)+'</td><td class="num">'+fmtPKR(s.rev)+'</td></tr>';}).join("");
+
+  // top operators
+  const oa={}; rows.forEach(x=>{const k=x.operatorId||x.operator;oa[k]=oa[k]||{name:x.operator,v:0,g:0,r:0};oa[k].v++;oa[k].g+=x.effectiveGuests;oa[k].r+=x.effectiveRevenue;});
+  const topOps=Object.values(oa).sort((a,b)=>b.r-a.r).slice(0,15);
+  const opRows=topOps.map((o,i)=>'<tr><td class="num muted">'+(i+1)+'</td><td class="s">'+esc(o.name)+'</td><td class="num">'+o.v+'</td><td class="num">'+fmtN(o.g)+'</td><td class="num">'+fmtPKR(o.r)+'</td></tr>').join("");
+
+  // cities
+  const bc={}; rows.forEach(x=>{const c=(x.city||"Unknown").trim()||"Unknown";const key=c.charAt(0).toUpperCase()+c.slice(1).toLowerCase();bc[key]=bc[key]||{g:0,c:0};bc[key].c++;bc[key].g+=x.effectiveGuests;});
+  const cityRows=Object.keys(bc).sort((a,b)=>bc[b].g-bc[a].g).slice(0,12).map(k=>'<tr><td class="s">'+k+'</td><td class="num">'+bc[k].c+'</td><td class="num">'+fmtN(bc[k].g)+'</td></tr>').join("");
+
+  $("repCard").innerHTML=
+    '<div class="rep-h"><div><div class="rep-title">Tour Operator Engagement Report</div>'+
+      '<div class="rep-sub">Malam Jabba Ski Resort \u00b7 Samsons Group &nbsp;|&nbsp; Period: '+(from?dPretty(from):"start")+' to '+(to?dPretty(to):"now")+' &nbsp;|&nbsp; Generated '+dPretty(new Date().toISOString())+'</div></div></div>'+
+    '<div class="rep-kpis">'+
+      repKpi(fmtN(ops),"Operators")+repKpi(fmtN(rows.length),"Engagements")+repKpi(fmtN(guests),"Guests (effective)")+
+      repKpi(fmtPKRk(rev),"Revenue (projected)")+repKpi(arrived+" / "+rows.length,"Arrived")+
+    '</div>'+
+    '<div class="rep-section"><h4>Segment Comparison</h4><table class="rep-table"><thead><tr><th>Segment</th><th class="num">Groups</th><th class="num">Guests</th><th class="num">Avg Size</th><th class="num">Revenue</th></tr></thead><tbody>'+segRows+'</tbody></table></div>'+
+    '<div class="rep-section"><h4>Top Operators by Revenue</h4><table class="rep-table"><thead><tr><th class="num">#</th><th>Operator</th><th class="num">Visits</th><th class="num">Guests</th><th class="num">Revenue</th></tr></thead><tbody>'+opRows+'</tbody></table></div>'+
+    '<div class="rep-section"><h4>Top Source Cities</h4><table class="rep-table"><thead><tr><th>City / Region</th><th class="num">Engagements</th><th class="num">Guests</th></tr></thead><tbody>'+cityRows+'</tbody></table></div>'+
+    '<div class="rep-sub" style="margin-top:24px;border-top:1px solid var(--line);padding-top:14px">Revenue is computed at PKR '+fmtN(DATA.ticketPrice)+' per guest, net of requested discount. Effective guests use recorded actual arrivals where available, otherwise estimated guests.</div>';
+}
+function repKpi(v,l){return '<div class="rep-kpi"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';}
+
+/* ----- add engagement ----- */
+$("aReset").onclick=()=>document.querySelectorAll("#view-add input,#view-add textarea").forEach(i=>{if(i.id==="aActivity")i.value="Chairlift";else if(i.id==="aDiscount")i.value="0.1";else i.value="";});
+$("aSubmit").onclick=async()=>{
+  const name=$("aName").value.trim();
+  if(!name){ toast("Operator name is required","bad"); $("aName").focus(); return; }
+  const btn=$("aSubmit"); btn.disabled=true; const old=btn.innerHTML; btn.textContent="Creating...";
+  try{
+    const res=await postAction({action:"addEngagement",
+      operator:name, orgType:$("aOrg").value, contact:$("aContact").value, phone:$("aPhone").value,
+      email:$("aEmail").value, city:$("aCity").value, visitDate:$("aVisit").value,
+      estimated:$("aGuests").value, guestType:$("aGuestType").value, activity:$("aActivity").value,
+      discount:$("aDiscount").value, prevVisit:$("aPrev").value, tier:$("aTier").value,
+      owner:$("aOwner").value, notes:$("aNotes").value });
+    toast("Created "+(res&&res.visitId?res.visitId:"engagement"),"ok");
+    $("aReset").click();
+    document.querySelector('.tab[data-view="engagements"]').click();
+  }catch(err){ toast("Failed: "+err.message,"bad"); }
+  btn.disabled=false; btn.innerHTML=old;
+};
+
+/* ----- CSV ----- */
+function exportCSV(rows,fname){
+  if(!rows.length){ toast("Nothing to export","bad"); return; }
+  const cols=["visitId","operatorId","operator","orgType","contact","phone","email","city","visitDate","estimated","actualOverride","effectiveGuests","discountRate","effectiveRevenue","activity","guestType","prevVisit","tier","status","owner","followUp","lastContact","source","timestamp"];
+  const head=cols.join(",");
+  const body=rows.map(r=>cols.map(c=>{let v=r[c];if(c==="visitDate"||c==="followUp"||c==="lastContact"||c==="timestamp")v=dOnly(v);v=v===undefined||v===null?"":String(v);if(/[",\n]/.test(v))v='"'+v.replace(/"/g,'""')+'"';return v;}).join(",")).join("\n");
+  const blob=new Blob([head+"\n"+body],{type:"text/csv"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=fname+"_"+todayStr()+".csv"; a.click(); URL.revokeObjectURL(a.href);
+  toast("Exported "+rows.length+" rows","ok");
+}
+
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeDrawer();closeModal();}});
+
+/* ----- boot ----- */
+loadData();
+</script>
+</body>
+</html>
