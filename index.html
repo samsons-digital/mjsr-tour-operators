@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MJSR Tour Operator Engagement Portal</title>
+<title>MJSR Sales Engagement Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -96,6 +96,16 @@ input,select,textarea{font-family:inherit}
 .chart-card .csub{font-size:.72rem;color:var(--ink-faint);margin-bottom:14px}
 .chart-box{position:relative;height:240px}
 .chart-box.tall{height:300px}
+
+/* segment switcher */
+.segbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.segpill{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:999px;cursor:pointer;
+  font-size:.8rem;font-weight:600;letter-spacing:.01em;color:var(--ink-dim);
+  background:var(--panel);border:1px solid var(--line);transition:all .16s ease;white-space:nowrap}
+.segpill:hover{border-color:var(--ice);color:var(--ink)}
+.segpill .sc{font-size:.7rem;font-weight:700;padding:1px 7px;border-radius:999px;background:rgba(120,150,180,.16);color:var(--ink-dim)}
+.segpill.active{background:linear-gradient(135deg,rgba(95,211,232,.18),rgba(95,211,232,.06));border-color:var(--ice);color:var(--ice);box-shadow:0 0 0 1px rgba(95,211,232,.25) inset}
+.segpill.active .sc{background:rgba(95,211,232,.22);color:var(--ice)}
 
 /* filter bar */
 .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px;margin-bottom:14px}
@@ -202,6 +212,12 @@ tbody td.op{color:var(--ink);font-weight:500}
 .rep-section h4{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ice);margin-bottom:12px;
   padding-bottom:8px;border-bottom:1px solid var(--line)}
 .rep-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.rep-charts{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+.rc-card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.rc-card.wide{grid-column:1 / -1}
+.rc-h{font-size:.8rem;font-weight:600;color:var(--ink);margin-bottom:10px}
+.rc-box{position:relative;height:260px}
+@media(max-width:760px){.rep-charts{grid-template-columns:1fr}}
 .rep-kpi{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px}
 .rep-kpi .v{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600}
 .rep-kpi .l{font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
@@ -250,6 +266,7 @@ tbody td.op{color:var(--ink);font-weight:500}
   .view{display:none!important}#view-reports{display:block!important}
   .panel,.repcard{background:#fff;border:1px solid #ccc;box-shadow:none}
   .rep-title,.rep-section h4{color:#111} .rep-kpi{background:#f6f6f6}
+  .rc-card{background:#fff;border:1px solid #ccc;break-inside:avoid} .rc-h{color:#111}
 }
 </style>
 </head>
@@ -267,7 +284,7 @@ tbody td.op{color:var(--ink);font-weight:500}
         </svg>
       </div>
       <div>
-        <h1>Tour Operator Engagement Portal</h1>
+        <h1>Sales Engagement Portal</h1>
         <div class="sub">Malam Jabba Ski Resort &middot; Samsons Group</div>
       </div>
     </div>
@@ -297,15 +314,16 @@ tbody td.op{color:var(--ink);font-weight:500}
 
     <!-- OVERVIEW -->
     <section class="view active" id="view-overview">
+      <div class="segbar" id="segBar"></div>
       <div class="kpis" id="kpiRow"></div>
-      <div class="section-h"><h2>Engagement Pipeline</h2><span class="hint">Effective figures use recorded actuals where available, otherwise estimated guests</span></div>
+      <div class="section-h"><h2 id="ovTitle">Engagement Pipeline</h2><span class="hint">Effective figures use recorded actuals where available, otherwise estimated guests</span></div>
       <div class="grid-2">
         <div class="panel chart-card"><h3>Monthly Engagements &amp; Guests</h3><div class="csub">Enquiries logged and guest volume by month</div><div class="chart-box tall"><canvas id="chMonthly"></canvas></div></div>
-        <div class="panel chart-card"><h3>Organisation Mix</h3><div class="csub">Share of engagements by organisation type</div><div class="chart-box tall"><canvas id="chOrg"></canvas></div></div>
+        <div class="panel chart-card"><h3 id="t-c2">Organisation Mix</h3><div class="csub" id="s-c2">Share of engagements by organisation type</div><div class="chart-box tall"><canvas id="chOrg"></canvas></div></div>
       </div>
       <div class="grid-2" style="margin-top:16px">
-        <div class="panel chart-card"><h3>Top 10 Operators by Guests</h3><div class="csub">Effective guest volume per operator</div><div class="chart-box tall"><canvas id="chTopOps"></canvas></div></div>
-        <div class="panel chart-card"><h3>Segment Comparison</h3><div class="csub">Tour Operators vs Schools / Colleges vs Corporate</div><div class="chart-box tall"><canvas id="chSegment"></canvas></div></div>
+        <div class="panel chart-card"><h3 id="t-c3">Top 10 Operators by Guests</h3><div class="csub" id="s-c3">Effective guest volume per organisation</div><div class="chart-box tall"><canvas id="chTopOps"></canvas></div></div>
+        <div class="panel chart-card"><h3 id="t-c4">Segment Comparison</h3><div class="csub" id="s-c4">Guests and revenue by segment</div><div class="chart-box tall"><canvas id="chSegment"></canvas></div></div>
       </div>
       <div class="grid-2" style="margin-top:16px">
         <div class="panel chart-card"><h3>Top Source Cities</h3><div class="csub">Engagements by city or region of origin</div><div class="chart-box"><canvas id="chCity"></canvas></div></div>
@@ -320,7 +338,7 @@ tbody td.op{color:var(--ink);font-weight:500}
         <select id="fStatus"><option value="">All statuses</option></select>
         <select id="fOrg"><option value="">All types</option></select>
         <select id="fCity"><option value="">All cities</option></select>
-        <select id="fSegment"><option value="">All segments</option><option>Tour Operators</option><option>Schools / Colleges</option><option>Corporate</option><option>Private Group</option></select>
+        <select id="fSegment"><option value="">All segments</option><option>Tour Operators</option><option>Schools</option><option>Colleges</option><option>Universities</option><option>Corporate</option><option>Private Groups</option></select>
         <input type="date" id="fFrom" title="Visit date from">
         <input type="date" id="fTo" title="Visit date to">
         <span class="grow"></span>
@@ -378,10 +396,23 @@ tbody td.op{color:var(--ink);font-weight:500}
         <label style="font-size:.78rem;color:var(--ink-faint)">Period</label>
         <input type="date" id="repFrom"><span style="color:var(--ink-faint)">to</span><input type="date" id="repTo">
         <select id="repPreset">
-          <option value="all">All time</option>
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="90d">Last 90 days</option>
+          <option value="month">This month</option>
           <option value="season">Current season (Dec-Mar)</option>
           <option value="ytd">This calendar year</option>
+          <option value="all" selected>All time</option>
           <option value="custom">Custom</option>
+        </select>
+        <select id="repSegment">
+          <option value="">All segments</option>
+          <option>Tour Operators</option>
+          <option>Schools</option>
+          <option>Colleges</option>
+          <option>Universities</option>
+          <option>Corporate</option>
+          <option>Private Groups</option>
         </select>
         <span class="grow"></span>
         <button class="btn" id="repExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</button>
@@ -396,7 +427,7 @@ tbody td.op{color:var(--ink);font-weight:500}
       <div class="panel repcard" style="max-width:880px">
         <div class="formgrid">
           <div class="fg"><label>Operator / School / Group name *</label><input id="aName" placeholder="e.g. Ghoomo Phiro Pakistan"></div>
-          <div class="fg"><label>Organisation type</label><select id="aOrg"><option>Tour Operator</option><option>College / University</option><option>School</option><option>Corporate</option><option>Private Group Organizer</option><option>Other</option></select></div>
+          <div class="fg"><label>Organisation type</label><select id="aOrg"><option>Tour Operator</option><option>School</option><option>College</option><option>University</option><option>Corporate</option><option>Private Group Organizer</option><option>Other</option></select></div>
           <div class="fg"><label>Contact person</label><input id="aContact" placeholder="Full name"></div>
           <div class="fg"><label>Phone (WhatsApp)</label><input id="aPhone" placeholder="03xx xxxxxxx"></div>
           <div class="fg"><label>Email</label><input id="aEmail" placeholder="optional"></div>
@@ -459,6 +490,7 @@ const LS_KEY = "mjsr_to_portal_api";
 let apiUrl = API_URL || localStorage.getItem(LS_KEY) || "";
 let DATA = { engagements: [], ticketPrice: 2300, validStatus: ["New","Contacted","Confirmed","Arrived","No-Show","Cancelled","Lost"] };
 let charts = {};
+let repCharts = {};
 let engSort = { key: "timestamp", dir: -1 };
 let activeVid = null;
 
@@ -467,17 +499,31 @@ const fmtN = n => (Number(n)||0).toLocaleString("en-US");
 const fmtPKR = n => "PKR " + (Number(n)||0).toLocaleString("en-US");
 const fmtPKRk = n => { n=Number(n)||0; if(n>=1e6) return "PKR "+(n/1e6).toFixed(2)+"M"; if(n>=1e3) return "PKR "+(n/1e3).toFixed(0)+"k"; return "PKR "+n; };
 function dOnly(iso){ if(!iso) return ""; const d=new Date(iso); if(isNaN(d)) return ""; return d.toISOString().slice(0,10); }
-function dPretty(iso){ if(!iso) return "\u2014"; const d=new Date(iso); if(isNaN(d)) return "\u2014"; return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}); }
+function dPretty(iso){ if(!iso) return "\u2013"; const d=new Date(iso); if(isNaN(d)) return "\u2013"; return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}); }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 
-function segmentOf(orgType){
-  const t=(orgType||"").toLowerCase();
-  if(t.indexOf("college")>=0||t.indexOf("university")>=0||t.indexOf("school")>=0) return "Schools / Colleges";
-  if(t.indexOf("corporate")>=0) return "Corporate";
-  if(t.indexOf("private")>=0) return "Private Group";
+/* Segment taxonomy. The historical sheet stores Colleges and Universities under
+   one combined "College / University" type, so those rows are split by name. New
+   entries logged through the portal carry an explicit School / College / University
+   / Corporate type and classify exactly. */
+const SEGMENT_ORDER=["Tour Operators","Schools","Colleges","Universities","Corporate","Private Groups","Other"];
+function fineSegment(x){
+  const t=((x&&x.orgType)||"").toLowerCase();
+  const name=(((x&&x.operator)||"")+" "+((x&&x.orgOther)||"")).toLowerCase();
   if(t.indexOf("tour")>=0) return "Tour Operators";
+  if(t.indexOf("school")>=0) return "Schools";
+  if(t.indexOf("corporate")>=0) return "Corporate";
+  if(t.indexOf("private")>=0) return "Private Groups";
+  const hasCollege=t.indexOf("college")>=0, hasUni=t.indexOf("university")>=0;
+  if(hasCollege && hasUni) return /univ/.test(name) ? "Universities" : "Colleges";
+  if(hasUni) return "Universities";
+  if(hasCollege) return "Colleges";
   return "Other";
 }
+function segmentOf(orgType){ return fineSegment({orgType:orgType}); }
+
+let overviewSegment="All";
+function overviewEng(){ return overviewSegment==="All" ? DATA.engagements : DATA.engagements.filter(x=>fineSegment(x)===overviewSegment); }
 
 /* ---------- toast ---------- */
 let toastT;
@@ -568,6 +614,7 @@ function renderAll(){
   setSync("live");
   $("engCount").textContent = DATA.engagements.length;
   populateFilters();
+  renderSegBar();
   renderKPIs();
   renderCharts();
   renderEngTable();
@@ -576,9 +623,35 @@ function renderAll(){
   initReports();
 }
 
+/* ----- segment switcher ----- */
+function segmentCounts(){
+  const c={}; DATA.engagements.forEach(x=>{const s=fineSegment(x);c[s]=(c[s]||0)+1;});
+  return c;
+}
+function renderSegBar(){
+  const bar=$("segBar"); if(!bar) return;
+  const counts=segmentCounts();
+  const present=SEGMENT_ORDER.filter(s=>counts[s]);
+  if(overviewSegment!=="All" && !counts[overviewSegment]) overviewSegment="All";
+  const pills=[{k:"All",n:DATA.engagements.length}].concat(present.map(s=>({k:s,n:counts[s]})));
+  bar.innerHTML=pills.map(p=>
+    '<div class="segpill'+(p.k===overviewSegment?' active':'')+'" data-seg="'+esc(p.k)+'">'+
+      (p.k==="All"?"All Segments":esc(p.k))+'<span class="sc">'+fmtN(p.n)+'</span></div>'
+  ).join("");
+  bar.querySelectorAll(".segpill").forEach(el=>{
+    el.onclick=()=>setSegment(el.dataset.seg);
+  });
+}
+function setSegment(s){
+  overviewSegment=s||"All";
+  renderSegBar();
+  renderKPIs();
+  renderCharts();
+}
+
 /* ----- KPIs ----- */
 function renderKPIs(){
-  const e=DATA.engagements;
+  const e=overviewEng();
   const ops=new Set(e.map(x=>x.operatorId||x.operatorKey||x.operator)).size;
   const totalGuests=e.reduce((s,x)=>s+(x.effectiveGuests||0),0);
   const totalRev=e.reduce((s,x)=>s+(x.effectiveRevenue||0),0);
@@ -586,11 +659,12 @@ function renderKPIs(){
   const arrivedRev=arrived.reduce((s,x)=>s+(x.effectiveRevenue||0),0);
   const confirmed=e.filter(x=>x.status==="Confirmed"||x.status==="Arrived").length;
   const newCount=e.filter(x=>x.status==="New").length;
-  const fu=followupBuckets();
+  const fu=followupBuckets(e);
   const convRate = e.length? Math.round(arrived.length/e.length*100):0;
+  const orgLabel = overviewSegment==="All" ? "Unique Operators" : "Organisations";
 
   const cards=[
-    {c:"ice",   l:"Unique Operators", v:fmtN(ops),         m:e.length+" total engagements", ic:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>'},
+    {c:"ice",   l:orgLabel,           v:fmtN(ops),         m:e.length+" total engagements", ic:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>'},
     {c:"amber", l:"Pipeline Guests",  v:fmtN(totalGuests), m:"effective guest volume", ic:'<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/>'},
     {c:"green", l:"Projected Revenue",v:fmtPKRk(totalRev), m:"@ PKR "+fmtN(DATA.ticketPrice)+" / guest", ic:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>'},
     {c:"violet",l:"Confirmed Revenue",v:fmtPKRk(arrivedRev),m:arrived.length+" arrived groups", ic:'<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'},
@@ -618,7 +692,10 @@ function destroyCharts(){ Object.values(charts).forEach(c=>c&&c.destroy()); char
 function renderCharts(){
   if(typeof Chart==="undefined") return;
   destroyCharts();
-  const e=DATA.engagements;
+  const e=overviewEng();
+  const single = overviewSegment!=="All";
+  if($("ovTitle")) $("ovTitle").textContent = single ? overviewSegment+" Pipeline" : "Engagement Pipeline";
+  if($("t-c3")) $("t-c3").textContent = single ? "Top 10 "+overviewSegment+" by Guests" : "Top 10 Operators by Guests";
 
   // Monthly
   const byMonth={};
@@ -635,11 +712,23 @@ function renderCharts(){
       y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:tickColor(),font:{family:CHART_FONT}},title:{display:true,text:"Engagements",color:tickColor()}}
     }})});
 
-  // Org doughnut
-  const byOrg={}; e.forEach(x=>{const o=x.orgType||"Other";byOrg[o]=(byOrg[o]||0)+1;});
-  const orgK=Object.keys(byOrg).sort((a,b)=>byOrg[b]-byOrg[a]);
-  charts.o=new Chart($("chOrg"),{type:"doughnut",data:{labels:orgK,datasets:[{data:orgK.map(k=>byOrg[k]),backgroundColor:PAL,borderColor:"#0d1827",borderWidth:2}]},
-    options:baseOpts({cutout:"58%",plugins:{legend:{position:"bottom",labels:{color:tickColor(),font:{family:CHART_FONT,size:11},boxWidth:11,padding:10}}}})});
+  // Card 2: All -> Organisation Mix; Segment -> Status Breakdown
+  if(single){
+    if($("t-c2")) $("t-c2").textContent="Status Breakdown";
+    if($("s-c2")) $("s-c2").textContent="Where this segment sits in the pipeline";
+    const byStatus={}; e.forEach(x=>{const s=x.status||"New";byStatus[s]=(byStatus[s]||0)+1;});
+    const stK=DATA.validStatus.filter(s=>byStatus[s]);
+    const stCol={"New":"#5fd3e8","Contacted":"#f5b656","Confirmed":"#a99cf0","Arrived":"#74d99f","No-Show":"#f2849b","Cancelled":"#e2849b","Lost":"#6e8499"};
+    charts.o=new Chart($("chOrg"),{type:"doughnut",data:{labels:stK,datasets:[{data:stK.map(k=>byStatus[k]),backgroundColor:stK.map(k=>stCol[k]||"#7fe0d4"),borderColor:"#0d1827",borderWidth:2}]},
+      options:baseOpts({cutout:"58%",plugins:{legend:{position:"bottom",labels:{color:tickColor(),font:{family:CHART_FONT,size:11},boxWidth:11,padding:10}}}})});
+  } else {
+    if($("t-c2")) $("t-c2").textContent="Organisation Mix";
+    if($("s-c2")) $("s-c2").textContent="Share of engagements by organisation type";
+    const byOrg={}; e.forEach(x=>{const o=x.orgType||"Other";byOrg[o]=(byOrg[o]||0)+1;});
+    const orgK=Object.keys(byOrg).sort((a,b)=>byOrg[b]-byOrg[a]);
+    charts.o=new Chart($("chOrg"),{type:"doughnut",data:{labels:orgK,datasets:[{data:orgK.map(k=>byOrg[k]),backgroundColor:PAL,borderColor:"#0d1827",borderWidth:2}]},
+      options:baseOpts({cutout:"58%",plugins:{legend:{position:"bottom",labels:{color:tickColor(),font:{family:CHART_FONT,size:11},boxWidth:11,padding:10}}}})});
+  }
 
   // Top operators by guests
   const opAgg={};
@@ -651,18 +740,37 @@ function renderCharts(){
       x:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10}}},
       y:{grid:{display:false},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10}}}}})});
 
-  // Segment comparison
-  const seg={}; e.forEach(x=>{const s=segmentOf(x.orgType);seg[s]=seg[s]||{groups:0,guests:0,rev:0};seg[s].groups++;seg[s].guests+=x.effectiveGuests||0;seg[s].rev+=x.effectiveRevenue||0;});
-  const segK=["Tour Operators","Schools / Colleges","Corporate","Private Group"].filter(k=>seg[k]);
-  charts.s=new Chart($("chSegment"),{type:"bar",data:{labels:segK,datasets:[
-      {label:"Guests",data:segK.map(k=>seg[k].guests),backgroundColor:"rgba(95,211,232,0.7)",borderRadius:5,yAxisID:"y"},
-      {label:"Revenue (PKR)",data:segK.map(k=>seg[k].rev),backgroundColor:"rgba(116,217,159,0.6)",borderRadius:5,yAxisID:"y1"}
-    ]},
-    options:baseOpts({scales:{
-      x:{grid:{display:false},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10}}},
-      y:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT}}},
-      y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:tickColor(),font:{family:CHART_FONT},callback:v=>(v/1e6).toFixed(1)+"M"}}
-    }})});
+  // Card 4: All -> Segment Comparison; Segment -> Status Funnel (guests by stage)
+  if(single){
+    if($("t-c4")) $("t-c4").textContent="Pipeline Funnel";
+    if($("s-c4")) $("s-c4").textContent="Guest volume by pipeline stage";
+    const order=["New","Contacted","Confirmed","Arrived"];
+    const fun={}; e.forEach(x=>{const s=x.status||"New";fun[s]=fun[s]||{c:0,g:0};fun[s].c++;fun[s].g+=x.effectiveGuests||0;});
+    const fk=order.filter(s=>fun[s]);
+    charts.s=new Chart($("chSegment"),{type:"bar",data:{labels:fk,datasets:[
+        {label:"Guests",data:fk.map(k=>fun[k].g),backgroundColor:"rgba(95,211,232,0.7)",borderRadius:5,yAxisID:"y"},
+        {label:"Groups",data:fk.map(k=>fun[k].c),backgroundColor:"rgba(245,182,86,0.65)",borderRadius:5,yAxisID:"y1"}
+      ]},
+      options:baseOpts({scales:{
+        x:{grid:{display:false},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10}}},
+        y:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT}},title:{display:true,text:"Guests",color:tickColor()}},
+        y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:tickColor(),font:{family:CHART_FONT}},title:{display:true,text:"Groups",color:tickColor()}}
+      }})});
+  } else {
+    if($("t-c4")) $("t-c4").textContent="Segment Comparison";
+    if($("s-c4")) $("s-c4").textContent="Guests and revenue by segment";
+    const seg={}; e.forEach(x=>{const s=fineSegment(x);seg[s]=seg[s]||{groups:0,guests:0,rev:0};seg[s].groups++;seg[s].guests+=x.effectiveGuests||0;seg[s].rev+=x.effectiveRevenue||0;});
+    const segK=SEGMENT_ORDER.filter(k=>seg[k]);
+    charts.s=new Chart($("chSegment"),{type:"bar",data:{labels:segK,datasets:[
+        {label:"Guests",data:segK.map(k=>seg[k].guests),backgroundColor:"rgba(95,211,232,0.7)",borderRadius:5,yAxisID:"y"},
+        {label:"Revenue (PKR)",data:segK.map(k=>seg[k].rev),backgroundColor:"rgba(116,217,159,0.6)",borderRadius:5,yAxisID:"y1"}
+      ]},
+      options:baseOpts({scales:{
+        x:{grid:{display:false},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10}}},
+        y:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT}}},
+        y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:tickColor(),font:{family:CHART_FONT},callback:v=>(v/1e6).toFixed(1)+"M"}}
+      }})});
+  }
 
   // Cities
   const byCity={}; e.forEach(x=>{const c=(x.city||"Unknown").trim();if(!c)return;const key=c.charAt(0).toUpperCase()+c.slice(1).toLowerCase();byCity[key]=(byCity[key]||0)+1;});
@@ -699,7 +807,7 @@ function getFilteredEng(){
     if(st && x.status!==st) return false;
     if(org && x.orgType!==org) return false;
     if(city && x.city.trim()!==city) return false;
-    if(seg && segmentOf(x.orgType)!==seg) return false;
+    if(seg && fineSegment(x)!==seg) return false;
     const vd=dOnly(x.visitDate);
     if(from && vd && vd<from) return false;
     if(to && vd && vd>to) return false;
@@ -723,15 +831,15 @@ function renderEngTable(){
   body.innerHTML=rows.map(x=>{
     const act=(x.activity||"").split(",").slice(0,2).map(a=>'<span class="chip">'+a.trim()+'</span>').join("");
     return '<tr onclick="openDrawer(\''+x.visitId+'\')">'+
-      '<td class="muted">'+ (x.visitId||"\u2014") +'</td>'+
+      '<td class="muted">'+ (x.visitId||"\u2013") +'</td>'+
       '<td class="op">'+x.operator+(x.prevVisit==="Yes"?' <span class="chip" style="color:var(--green)">repeat</span>':'')+'</td>'+
       '<td>'+x.orgType+'</td>'+
-      '<td>'+(x.city||"\u2014")+'</td>'+
+      '<td>'+(x.city||"\u2013")+'</td>'+
       '<td>'+dPretty(x.visitDate)+'</td>'+
       '<td class="num">'+fmtN(x.effectiveGuests)+(x.hasActual?' <span class="chip" style="color:var(--green)">actual</span>':'')+'</td>'+
       '<td class="num">'+fmtN(x.effectiveRevenue)+'</td>'+
       '<td><span class="badge b-'+x.status+'">'+x.status+'</span></td>'+
-      '<td>'+(x.followUp?dPretty(x.followUp):'<span class="muted">\u2014</span>')+'</td>'+
+      '<td>'+(x.followUp?dPretty(x.followUp):'<span class="muted">\u2013</span>')+'</td>'+
     '</tr>';
   }).join("");
   const g=rows.reduce((s,x)=>s+x.effectiveGuests,0), r=rows.reduce((s,x)=>s+x.effectiveRevenue,0);
@@ -751,11 +859,11 @@ function openDrawer(vid){
   const tiers=["Basic","Bronze","Silver","Gold"].map(t=>'<option'+(t===x.tier?' selected':'')+'>'+t+'</option>').join("");
   $("dBody").innerHTML=
     '<div class="factgrid">'+
-      fact("Contact",x.contact||"\u2014")+fact("Phone",x.phone||"\u2014")+
+      fact("Contact",x.contact||"\u2013")+fact("Phone",x.phone||"\u2013")+
       fact("Visit Date",dPretty(x.visitDate))+fact("Logged",dPretty(x.timestamp))+
-      fact("Estimated Guests",fmtN(x.estimated))+fact("Guest Type",x.guestType||"\u2014")+
-      fact("Activities",x.activity||"\u2014")+fact("Discount",Math.round((x.discountRate||0)*100)+"%")+
-      fact("Effective Revenue",fmtPKR(x.effectiveRevenue))+fact("Previous Visit",x.prevVisit||"\u2014")+
+      fact("Estimated Guests",fmtN(x.estimated))+fact("Guest Type",x.guestType||"\u2013")+
+      fact("Activities",x.activity||"\u2013")+fact("Discount",Math.round((x.discountRate||0)*100)+"%")+
+      fact("Effective Revenue",fmtPKR(x.effectiveRevenue))+fact("Previous Visit",x.prevVisit||"\u2013")+
     '</div>'+
     '<div class="dfield"><label>Status</label><select id="edStatus">'+statusOpts+'</select></div>'+
     '<div class="drow">'+
@@ -800,7 +908,7 @@ function operatorAggregates(){
   const map={};
   DATA.engagements.forEach(x=>{
     const id=x.operatorId||("key:"+(x.operatorKey||x.operator.toLowerCase()));
-    if(!map[id]) map[id]={id:x.operatorId||"\u2014",name:x.operator,contact:x.contact,phone:x.phone,city:x.city,
+    if(!map[id]) map[id]={id:x.operatorId||"\u2013",name:x.operator,contact:x.contact,phone:x.phone,city:x.city,
       visits:0,guests:0,revenue:0,tier:x.tier,last:"",statuses:{}};
     const o=map[id];
     o.visits++; o.guests+=x.effectiveGuests||0; o.revenue+=x.effectiveRevenue||0;
@@ -830,7 +938,7 @@ function renderOperators(){
         '<div class="st"><div class="n">'+fmtN(o.guests)+'</div><div class="l">Guests</div></div>'+
         '<div class="st"><div class="n">'+fmtPKRk(o.revenue).replace("PKR ","")+'</div><div class="l">Revenue</div></div>'+
       '</div>'+
-      '<div class="foot"><span>'+(o.city||"\u2014")+'</span><span>Last: '+dPretty(o.last)+'</span></div>'+
+      '<div class="foot"><span>'+(o.city||"\u2013")+'</span><span>Last: '+dPretty(o.last)+'</span></div>'+
     '</div>').join("") || '<div class="state">No operators found.</div>';
 }
 function drillOperator(name){
@@ -839,10 +947,10 @@ function drillOperator(name){
 }
 
 /* ----- follow-ups ----- */
-function followupBuckets(){
+function followupBuckets(list){
   const t=todayStr();
   const over=[],due=[],unc=[];
-  DATA.engagements.forEach(x=>{
+  (list||DATA.engagements).forEach(x=>{
     if(["Arrived","Cancelled","Lost","No-Show"].indexOf(x.status)>=0) return;
     const f=dOnly(x.followUp);
     if(f){ if(f<t) over.push(x); else due.push(x); }
@@ -886,18 +994,25 @@ function initReports(){
 }
 $("repPreset").addEventListener("change",()=>{
   const p=$("repPreset").value; const now=new Date();
+  const iso=d=>d.toISOString().slice(0,10);
+  const back=n=>{const d=new Date(now);d.setDate(d.getDate()-n);return iso(d);};
   if(p==="all"){ const ds=DATA.engagements.map(x=>dOnly(x.timestamp)).filter(Boolean).sort(); if(ds.length){$("repFrom").value=ds[0];$("repTo").value=ds[ds.length-1];} }
+  else if(p==="7d"){ $("repFrom").value=back(6); $("repTo").value=todayStr(); }
+  else if(p==="30d"){ $("repFrom").value=back(29); $("repTo").value=todayStr(); }
+  else if(p==="90d"){ $("repFrom").value=back(89); $("repTo").value=todayStr(); }
+  else if(p==="month"){ $("repFrom").value=iso(new Date(now.getFullYear(),now.getMonth(),1)); $("repTo").value=todayStr(); }
   else if(p==="ytd"){ $("repFrom").value=now.getFullYear()+"-01-01"; $("repTo").value=todayStr(); }
   else if(p==="season"){ const y=now.getMonth()<6?now.getFullYear()-1:now.getFullYear(); $("repFrom").value=y+"-12-01"; $("repTo").value=(y+1)+"-03-31"; }
   buildReport();
 });
 ["repFrom","repTo"].forEach(id=>$(id).addEventListener("change",()=>{$("repPreset").value="custom";buildReport();}));
+$("repSegment").addEventListener("change",buildReport);
 $("repPrint").onclick=()=>window.print();
-$("repExport").onclick=()=>exportCSV(reportRows(),"mjsr_operator_report");
+$("repExport").onclick=()=>exportCSV(reportRows(),"mjsr_engagement_report");
 
 function reportRows(){
-  const from=$("repFrom").value,to=$("repTo").value;
-  return DATA.engagements.filter(x=>{const d=dOnly(x.timestamp);if(from&&d&&d<from)return false;if(to&&d&&d>to)return false;return true;});
+  const from=$("repFrom").value,to=$("repTo").value,seg=$("repSegment").value;
+  return DATA.engagements.filter(x=>{const d=dOnly(x.timestamp);if(from&&d&&d<from)return false;if(to&&d&&d>to)return false;if(seg&&fineSegment(x)!==seg)return false;return true;});
 }
 function buildReport(){
   const rows=reportRows();
@@ -908,7 +1023,7 @@ function buildReport(){
   const arrived=rows.filter(x=>x.status==="Arrived").length;
 
   // segment table
-  const seg={}; rows.forEach(x=>{const s=segmentOf(x.orgType);seg[s]=seg[s]||{groups:0,guests:0,rev:0};seg[s].groups++;seg[s].guests+=x.effectiveGuests;seg[s].rev+=x.effectiveRevenue;});
+  const seg={}; rows.forEach(x=>{const s=fineSegment(x);seg[s]=seg[s]||{groups:0,guests:0,rev:0};seg[s].groups++;seg[s].guests+=x.effectiveGuests;seg[s].rev+=x.effectiveRevenue;});
   const segRows=Object.keys(seg).sort((a,b)=>seg[b].rev-seg[a].rev).map(k=>{const s=seg[k];
     return '<tr><td class="s">'+k+'</td><td class="num">'+s.groups+'</td><td class="num">'+fmtN(s.guests)+'</td><td class="num">'+(s.groups?Math.round(s.guests/s.groups):0)+'</td><td class="num">'+fmtPKR(s.rev)+'</td></tr>';}).join("");
 
@@ -921,17 +1036,73 @@ function buildReport(){
   const bc={}; rows.forEach(x=>{const c=(x.city||"Unknown").trim()||"Unknown";const key=c.charAt(0).toUpperCase()+c.slice(1).toLowerCase();bc[key]=bc[key]||{g:0,c:0};bc[key].c++;bc[key].g+=x.effectiveGuests;});
   const cityRows=Object.keys(bc).sort((a,b)=>bc[b].g-bc[a].g).slice(0,12).map(k=>'<tr><td class="s">'+k+'</td><td class="num">'+bc[k].c+'</td><td class="num">'+fmtN(bc[k].g)+'</td></tr>').join("");
 
+  const segSel=$("repSegment").value;
+  const repTitle=(segSel?segSel+" ":"")+"Engagement Report";
   $("repCard").innerHTML=
-    '<div class="rep-h"><div><div class="rep-title">Tour Operator Engagement Report</div>'+
+    '<div class="rep-h"><div><div class="rep-title">'+esc(repTitle)+'</div>'+
       '<div class="rep-sub">Malam Jabba Ski Resort \u00b7 Samsons Group &nbsp;|&nbsp; Period: '+(from?dPretty(from):"start")+' to '+(to?dPretty(to):"now")+' &nbsp;|&nbsp; Generated '+dPretty(new Date().toISOString())+'</div></div></div>'+
     '<div class="rep-kpis">'+
-      repKpi(fmtN(ops),"Operators")+repKpi(fmtN(rows.length),"Engagements")+repKpi(fmtN(guests),"Guests (effective)")+
-      repKpi(fmtPKRk(rev),"Revenue (projected)")+repKpi(arrived+" / "+rows.length,"Arrived")+
+      repKpi(fmtN(rows.length),"Interactions")+repKpi(fmtN(arrived),"Visits achieved")+repKpi(fmtN(ops),"Organisations")+
+      repKpi(fmtN(guests),"Guests (effective)")+repKpi(fmtPKRk(rev),"Revenue (projected)")+
     '</div>'+
+    '<div class="rep-section"><h4>Engagement Analytics</h4><div class="rep-charts">'+
+      '<div class="rc-card"><div class="rc-h">Interactions and Visits by Stakeholder</div><div class="rc-box"><canvas id="rcSeg"></canvas></div></div>'+
+      '<div class="rc-card"><div class="rc-h">Interaction Share by Stakeholder</div><div class="rc-box"><canvas id="rcShare"></canvas></div></div>'+
+      '<div class="rc-card wide"><div class="rc-h">Activity Trend over Period</div><div class="rc-box"><canvas id="rcTrend"></canvas></div></div>'+
+    '</div></div>'+
     '<div class="rep-section"><h4>Segment Comparison</h4><table class="rep-table"><thead><tr><th>Segment</th><th class="num">Groups</th><th class="num">Guests</th><th class="num">Avg Size</th><th class="num">Revenue</th></tr></thead><tbody>'+segRows+'</tbody></table></div>'+
     '<div class="rep-section"><h4>Top Operators by Revenue</h4><table class="rep-table"><thead><tr><th class="num">#</th><th>Operator</th><th class="num">Visits</th><th class="num">Guests</th><th class="num">Revenue</th></tr></thead><tbody>'+opRows+'</tbody></table></div>'+
     '<div class="rep-section"><h4>Top Source Cities</h4><table class="rep-table"><thead><tr><th>City / Region</th><th class="num">Engagements</th><th class="num">Guests</th></tr></thead><tbody>'+cityRows+'</tbody></table></div>'+
-    '<div class="rep-sub" style="margin-top:24px;border-top:1px solid var(--line);padding-top:14px">Revenue is computed at PKR '+fmtN(DATA.ticketPrice)+' per guest, net of requested discount. Effective guests use recorded actual arrivals where available, otherwise estimated guests.</div>';
+    '<div class="rep-sub" style="margin-top:24px;border-top:1px solid var(--line);padding-top:14px">Interactions count every engagement logged in the period. Visits achieved count engagements marked Arrived. Revenue is computed at PKR '+fmtN(DATA.ticketPrice)+' per guest, net of requested discount, using actual arrivals where recorded, otherwise estimated guests.</div>';
+
+  renderReportCharts(rows, from, to);
+}
+
+function renderReportCharts(rows, from, to){
+  Object.values(repCharts).forEach(c=>c&&c.destroy()); repCharts={};
+  if(typeof Chart==="undefined") return;
+
+  // by stakeholder: interactions (all rows) and visits (Arrived)
+  const seg={}; rows.forEach(x=>{const s=fineSegment(x);seg[s]=seg[s]||{i:0,v:0};seg[s].i++;if(x.status==="Arrived")seg[s].v++;});
+  const segK=SEGMENT_ORDER.filter(k=>seg[k]);
+  repCharts.seg=new Chart($("rcSeg"),{type:"bar",data:{labels:segK,datasets:[
+      {label:"Interactions",data:segK.map(k=>seg[k].i),backgroundColor:"rgba(95,211,232,0.75)",borderRadius:5},
+      {label:"Visits achieved",data:segK.map(k=>seg[k].v),backgroundColor:"rgba(116,217,159,0.8)",borderRadius:5}
+    ]},
+    options:baseOpts({scales:{
+      x:{grid:{display:false},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10}}},
+      y:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT},precision:0}}
+    }})});
+
+  // interaction share doughnut
+  repCharts.share=new Chart($("rcShare"),{type:"doughnut",data:{labels:segK,datasets:[{data:segK.map(k=>seg[k].i),backgroundColor:PAL,borderColor:"#0d1827",borderWidth:2}]},
+    options:baseOpts({cutout:"56%",plugins:{legend:{position:"bottom",labels:{color:tickColor(),font:{family:CHART_FONT,size:10},boxWidth:10,padding:8}}}})});
+
+  // trend over period: bucket interactions + visits
+  const start=from?new Date(from+"T00:00:00"):null, end=to?new Date(to+"T00:00:00"):null;
+  const spanDays=(start&&end)?Math.round((end-start)/86400000)+1:9999;
+  const mode=spanDays<=31?"day":spanDays<=120?"week":"month";
+  const buckets={}; const order=[];
+  function keyFor(d){
+    if(mode==="day") return d.toISOString().slice(0,10);
+    if(mode==="week"){ const t=new Date(d); const day=(t.getDay()+6)%7; t.setDate(t.getDate()-day); return t.toISOString().slice(0,10); }
+    return d.toISOString().slice(0,7);
+  }
+  function label(k){
+    if(mode==="day"){const d=new Date(k+"T00:00:00");return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short"});}
+    if(mode==="week"){const d=new Date(k+"T00:00:00");return "w/c "+d.toLocaleDateString("en-GB",{day:"2-digit",month:"short"});}
+    const d=new Date(k+"-01");return d.toLocaleDateString("en-GB",{month:"short",year:"2-digit"});
+  }
+  rows.forEach(x=>{const ds=dOnly(x.timestamp);if(!ds)return;const k=keyFor(new Date(ds+"T00:00:00"));if(!buckets[k]){buckets[k]={i:0,v:0};order.push(k);}buckets[k].i++;if(x.status==="Arrived")buckets[k].v++;});
+  order.sort();
+  repCharts.trend=new Chart($("rcTrend"),{data:{labels:order.map(label),datasets:[
+      {type:"line",label:"Interactions",data:order.map(k=>buckets[k].i),borderColor:"#5fd3e8",backgroundColor:"rgba(95,211,232,0.15)",fill:true,tension:.35,borderWidth:2,pointRadius:2},
+      {type:"line",label:"Visits achieved",data:order.map(k=>buckets[k].v),borderColor:"#74d99f",backgroundColor:"rgba(116,217,159,0.12)",fill:true,tension:.35,borderWidth:2,pointRadius:2}
+    ]},
+    options:baseOpts({scales:{
+      x:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT,size:10},maxRotation:0,autoSkip:true}},
+      y:{grid:{color:gridColor()},ticks:{color:tickColor(),font:{family:CHART_FONT},precision:0}}
+    }})});
 }
 function repKpi(v,l){return '<div class="rep-kpi"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';}
 
