@@ -318,7 +318,7 @@ tbody td.op{color:var(--ink);font-weight:500}
       <div class="kpis" id="kpiRow"></div>
       <div class="section-h"><h2 id="ovTitle">Engagement Pipeline</h2><span class="hint">Effective figures use recorded actuals where available, otherwise estimated guests</span></div>
       <div class="grid-2">
-        <div class="panel chart-card"><h3>Monthly Engagements &amp; Guests</h3><div class="csub">Enquiries logged and guest volume by month</div><div class="chart-box tall"><canvas id="chMonthly"></canvas></div></div>
+        <div class="panel chart-card"><h3>Monthly Visits &amp; Guests</h3><div class="csub">By visit month, using actual arrived guests where recorded</div><div class="chart-box tall"><canvas id="chMonthly"></canvas></div></div>
         <div class="panel chart-card"><h3 id="t-c2">Organisation Mix</h3><div class="csub" id="s-c2">Share of engagements by organisation type</div><div class="chart-box tall"><canvas id="chOrg"></canvas></div></div>
       </div>
       <div class="grid-2" style="margin-top:16px">
@@ -699,7 +699,7 @@ function renderCharts(){
 
   // Monthly
   const byMonth={};
-  e.forEach(x=>{ const m=dOnly(x.timestamp).slice(0,7); if(!m) return; byMonth[m]=byMonth[m]||{c:0,g:0}; byMonth[m].c++; byMonth[m].g+=x.effectiveGuests||0; });
+  e.forEach(x=>{ const m=dOnly(x.visitDate).slice(0,7); if(!m) return; byMonth[m]=byMonth[m]||{c:0,g:0}; byMonth[m].c++; byMonth[m].g+=x.effectiveGuests||0; });
   const months=Object.keys(byMonth).sort();
   charts.m=new Chart($("chMonthly"),{data:{labels:months.map(m=>{const d=new Date(m+"-01");return d.toLocaleDateString("en-GB",{month:"short",year:"2-digit"});}),
     datasets:[
@@ -987,7 +987,7 @@ async function quickContact(vid){
 /* ----- reports ----- */
 function initReports(){
   if(!$("repFrom").value && !$("repTo").value){
-    const ds=DATA.engagements.map(x=>dOnly(x.timestamp)).filter(Boolean).sort();
+    const ds=DATA.engagements.map(x=>dOnly(x.visitDate)).filter(Boolean).sort();
     if(ds.length){ $("repFrom").value=ds[0]; $("repTo").value=ds[ds.length-1]; }
   }
   buildReport();
@@ -996,7 +996,7 @@ $("repPreset").addEventListener("change",()=>{
   const p=$("repPreset").value; const now=new Date();
   const iso=d=>d.toISOString().slice(0,10);
   const back=n=>{const d=new Date(now);d.setDate(d.getDate()-n);return iso(d);};
-  if(p==="all"){ const ds=DATA.engagements.map(x=>dOnly(x.timestamp)).filter(Boolean).sort(); if(ds.length){$("repFrom").value=ds[0];$("repTo").value=ds[ds.length-1];} }
+  if(p==="all"){ const ds=DATA.engagements.map(x=>dOnly(x.visitDate)).filter(Boolean).sort(); if(ds.length){$("repFrom").value=ds[0];$("repTo").value=ds[ds.length-1];} }
   else if(p==="7d"){ $("repFrom").value=back(6); $("repTo").value=todayStr(); }
   else if(p==="30d"){ $("repFrom").value=back(29); $("repTo").value=todayStr(); }
   else if(p==="90d"){ $("repFrom").value=back(89); $("repTo").value=todayStr(); }
@@ -1012,7 +1012,7 @@ $("repExport").onclick=()=>exportCSV(reportRows(),"mjsr_engagement_report");
 
 function reportRows(){
   const from=$("repFrom").value,to=$("repTo").value,seg=$("repSegment").value;
-  return DATA.engagements.filter(x=>{const d=dOnly(x.timestamp);if(from&&d&&d<from)return false;if(to&&d&&d>to)return false;if(seg&&fineSegment(x)!==seg)return false;return true;});
+  return DATA.engagements.filter(x=>{const d=dOnly(x.visitDate);if(from&&(!d||d<from))return false;if(to&&(!d||d>to))return false;if(seg&&fineSegment(x)!==seg)return false;return true;});
 }
 function buildReport(){
   const rows=reportRows();
@@ -1042,18 +1042,18 @@ function buildReport(){
     '<div class="rep-h"><div><div class="rep-title">'+esc(repTitle)+'</div>'+
       '<div class="rep-sub">Malam Jabba Ski Resort \u00b7 Samsons Group &nbsp;|&nbsp; Period: '+(from?dPretty(from):"start")+' to '+(to?dPretty(to):"now")+' &nbsp;|&nbsp; Generated '+dPretty(new Date().toISOString())+'</div></div></div>'+
     '<div class="rep-kpis">'+
-      repKpi(fmtN(rows.length),"Interactions")+repKpi(fmtN(arrived),"Visits achieved")+repKpi(fmtN(ops),"Organisations")+
+      repKpi(fmtN(rows.length),"Engagements")+repKpi(fmtN(arrived),"Visits achieved")+repKpi(fmtN(ops),"Organisations")+
       repKpi(fmtN(guests),"Guests (effective)")+repKpi(fmtPKRk(rev),"Revenue (projected)")+
     '</div>'+
     '<div class="rep-section"><h4>Engagement Analytics</h4><div class="rep-charts">'+
-      '<div class="rc-card"><div class="rc-h">Interactions and Visits by Stakeholder</div><div class="rc-box"><canvas id="rcSeg"></canvas></div></div>'+
-      '<div class="rc-card"><div class="rc-h">Interaction Share by Stakeholder</div><div class="rc-box"><canvas id="rcShare"></canvas></div></div>'+
-      '<div class="rc-card wide"><div class="rc-h">Activity Trend over Period</div><div class="rc-box"><canvas id="rcTrend"></canvas></div></div>'+
+      '<div class="rc-card"><div class="rc-h">Engagements and Visits by Stakeholder</div><div class="rc-box"><canvas id="rcSeg"></canvas></div></div>'+
+      '<div class="rc-card"><div class="rc-h">Engagement Share by Stakeholder</div><div class="rc-box"><canvas id="rcShare"></canvas></div></div>'+
+      '<div class="rc-card wide"><div class="rc-h">Visit Trend over Period</div><div class="rc-box"><canvas id="rcTrend"></canvas></div></div>'+
     '</div></div>'+
     '<div class="rep-section"><h4>Segment Comparison</h4><table class="rep-table"><thead><tr><th>Segment</th><th class="num">Groups</th><th class="num">Guests</th><th class="num">Avg Size</th><th class="num">Revenue</th></tr></thead><tbody>'+segRows+'</tbody></table></div>'+
     '<div class="rep-section"><h4>Top Operators by Revenue</h4><table class="rep-table"><thead><tr><th class="num">#</th><th>Operator</th><th class="num">Visits</th><th class="num">Guests</th><th class="num">Revenue</th></tr></thead><tbody>'+opRows+'</tbody></table></div>'+
     '<div class="rep-section"><h4>Top Source Cities</h4><table class="rep-table"><thead><tr><th>City / Region</th><th class="num">Engagements</th><th class="num">Guests</th></tr></thead><tbody>'+cityRows+'</tbody></table></div>'+
-    '<div class="rep-sub" style="margin-top:24px;border-top:1px solid var(--line);padding-top:14px">Interactions count every engagement logged in the period. Visits achieved count engagements marked Arrived. Revenue is computed at PKR '+fmtN(DATA.ticketPrice)+' per guest, net of requested discount, using actual arrivals where recorded, otherwise estimated guests.</div>';
+    '<div class="rep-sub" style="margin-top:24px;border-top:1px solid var(--line);padding-top:14px">The period filters on visit date. Engagements count records with a visit date in the period; visits achieved count those marked Arrived. Leads with no visit date yet are not shown here. Revenue is computed at PKR '+fmtN(DATA.ticketPrice)+' per guest, net of requested discount, using actual arrivals where recorded, otherwise estimated guests.</div>';
 
   renderReportCharts(rows, from, to);
 }
@@ -1066,7 +1066,7 @@ function renderReportCharts(rows, from, to){
   const seg={}; rows.forEach(x=>{const s=fineSegment(x);seg[s]=seg[s]||{i:0,v:0};seg[s].i++;if(x.status==="Arrived")seg[s].v++;});
   const segK=SEGMENT_ORDER.filter(k=>seg[k]);
   repCharts.seg=new Chart($("rcSeg"),{type:"bar",data:{labels:segK,datasets:[
-      {label:"Interactions",data:segK.map(k=>seg[k].i),backgroundColor:"rgba(95,211,232,0.75)",borderRadius:5},
+      {label:"Engagements",data:segK.map(k=>seg[k].i),backgroundColor:"rgba(95,211,232,0.75)",borderRadius:5},
       {label:"Visits achieved",data:segK.map(k=>seg[k].v),backgroundColor:"rgba(116,217,159,0.8)",borderRadius:5}
     ]},
     options:baseOpts({scales:{
@@ -1093,10 +1093,10 @@ function renderReportCharts(rows, from, to){
     if(mode==="week"){const d=new Date(k+"T00:00:00");return "w/c "+d.toLocaleDateString("en-GB",{day:"2-digit",month:"short"});}
     const d=new Date(k+"-01");return d.toLocaleDateString("en-GB",{month:"short",year:"2-digit"});
   }
-  rows.forEach(x=>{const ds=dOnly(x.timestamp);if(!ds)return;const k=keyFor(new Date(ds+"T00:00:00"));if(!buckets[k]){buckets[k]={i:0,v:0};order.push(k);}buckets[k].i++;if(x.status==="Arrived")buckets[k].v++;});
+  rows.forEach(x=>{const ds=dOnly(x.visitDate);if(!ds)return;const k=keyFor(new Date(ds+"T00:00:00"));if(!buckets[k]){buckets[k]={i:0,v:0};order.push(k);}buckets[k].i++;if(x.status==="Arrived")buckets[k].v++;});
   order.sort();
   repCharts.trend=new Chart($("rcTrend"),{data:{labels:order.map(label),datasets:[
-      {type:"line",label:"Interactions",data:order.map(k=>buckets[k].i),borderColor:"#5fd3e8",backgroundColor:"rgba(95,211,232,0.15)",fill:true,tension:.35,borderWidth:2,pointRadius:2},
+      {type:"line",label:"Engagements",data:order.map(k=>buckets[k].i),borderColor:"#5fd3e8",backgroundColor:"rgba(95,211,232,0.15)",fill:true,tension:.35,borderWidth:2,pointRadius:2},
       {type:"line",label:"Visits achieved",data:order.map(k=>buckets[k].v),borderColor:"#74d99f",backgroundColor:"rgba(116,217,159,0.12)",fill:true,tension:.35,borderWidth:2,pointRadius:2}
     ]},
     options:baseOpts({scales:{
