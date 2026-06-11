@@ -589,7 +589,7 @@ async function loadData(){
   }
 }
 
-async function postAction(payload){
+async function postAction(payload, silent){
   if(!apiUrl) throw new Error("Not connected");
   const res = await fetch(apiUrl, {
     method:"POST",
@@ -598,7 +598,7 @@ async function postAction(payload){
   });
   const json = await res.json();
   if(!json.ok) throw new Error(json.error||"Server error");
-  if(json.data){ DATA = json.data; renderAll(); }
+  if(json.data){ DATA = json.data; if(!silent) renderAll(); }
   return json.result;
 }
 
@@ -1010,13 +1010,47 @@ function followupBuckets(list){
   unc.sort((a,b)=>(b.estimated||0)-(a.estimated||0));
   return {over,due,unc};
 }
+let uncGroups=[];
+function collapseUnc(list){
+  const map={}; const order=[];
+  list.forEach(x=>{
+    const key=x.operatorId||x.operatorKey||(x.operator||"").toLowerCase().trim();
+    if(!map[key]){ map[key]={rep:x,ids:[],guests:0,count:0}; order.push(key); }
+    map[key].ids.push(x.visitId);
+    map[key].guests+=x.estimated||0;
+    map[key].count++;
+    if((x.estimated||0)>(map[key].rep.estimated||0)) map[key].rep=x;
+  });
+  return order.map(k=>map[k]).sort((a,b)=>b.guests-a.guests);
+}
+function uncCard(g,i){
+  const x=g.rep;
+  const sub=fmtN(g.guests)+" guests"+(g.count>1?" \u00b7 "+g.count+" enquiries":"")+" \u00b7 logged "+dPretty(x.timestamp);
+  return '<div class="panel fucard unc">'+
+    '<div class="nm">'+esc(x.operator)+' <span class="badge b-New" style="margin-left:6px">New</span></div>'+
+    '<div class="dt">'+esc(x.contact||"")+(x.phone?' \u00b7 '+esc(x.phone):'')+'</div>'+
+    '<div class="dt">'+sub+'</div>'+
+    '<div class="act"><button class="btn" onclick="openDrawer(\''+x.visitId+'\')">Open</button>'+
+      '<button class="btn ghost" onclick="quickContactGroup('+i+')">Mark contacted</button></div>'+
+  '</div>';
+}
+async function quickContactGroup(i){
+  const g=uncGroups[i]; if(!g) return;
+  try{
+    for(const vid of g.ids){ await postAction({action:"logContact",visitId:vid,note:"Contacted (queue)",advanceToContacted:true},true); }
+    toast("Marked "+g.operatorLabel,"ok"); renderAll();
+  }catch(err){ toast("Failed: "+err.message,"bad"); }
+}
 function renderFollowups(){
   const {over,due,unc}=followupBuckets();
   $("fuCount").textContent=over.length+due.length;
-  $("ctOver").textContent=over.length; $("ctDue").textContent=due.length; $("ctUnc").textContent=unc.length;
+  $("ctOver").textContent=over.length; $("ctDue").textContent=due.length;
+  uncGroups=collapseUnc(unc);
+  uncGroups.forEach(g=>{ g.operatorLabel=(g.rep.operator||"operator")+(g.count>1?" ("+g.count+" enquiries)":""); });
+  $("ctUnc").textContent=uncGroups.length;
   $("colOver").innerHTML = over.map(x=>fuCard(x,"over","Follow-up "+dPretty(x.followUp))).join("")||emptyFu("Nothing overdue");
   $("colDue").innerHTML  = due.map(x=>fuCard(x,"due","Follow-up "+dPretty(x.followUp))).join("")||emptyFu("Nothing scheduled");
-  $("colUnc").innerHTML  = unc.slice(0,40).map(x=>fuCard(x,"unc",fmtN(x.estimated)+" guests \u00b7 logged "+dPretty(x.timestamp))).join("")||emptyFu("All contacted");
+  $("colUnc").innerHTML  = uncGroups.slice(0,60).map((g,i)=>uncCard(g,i)).join("")||emptyFu("All contacted");
 }
 function fuCard(x,cls,line){
   return '<div class="panel fucard '+cls+'">'+
