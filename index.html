@@ -1011,17 +1011,51 @@ function followupBuckets(list){
   return {over,due,unc};
 }
 let uncGroups=[];
+function normName(s){
+  let v=String(s||"").toLowerCase().replace(/collage/g,"college").replace(/&/g," and ");
+  v=v.replace(/[^a-z0-9]+/g," ");
+  const drop={the:1,pvt:1,ltd:1,private:1,limited:1,co:1,company:1};
+  return v.split(" ").filter(t=>t&&!drop[t]).join(" ").trim();
+}
+function phoneKey(x){ const ph=String(x.phone||"").replace(/\D/g,""); return ph.length>=10?ph.slice(-10):""; }
+function lev(a,b){
+  const m=a.length,n=b.length; if(!m)return n; if(!n)return m;
+  let prev=[]; for(let j=0;j<=n;j++)prev[j]=j;
+  for(let i=1;i<=m;i++){ const cur=[i];
+    for(let j=1;j<=n;j++){ cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)); }
+    prev=cur;
+  } return prev[n];
+}
+function simRatio(a,b){ const L=Math.max(a.length,b.length); return L?1-lev(a,b)/L:1; }
 function collapseUnc(list){
-  const map={}; const order=[];
-  list.forEach(x=>{
-    const key=x.operatorId||x.operatorKey||(x.operator||"").toLowerCase().trim();
-    if(!map[key]){ map[key]={rep:x,ids:[],guests:0,count:0}; order.push(key); }
-    map[key].ids.push(x.visitId);
-    map[key].guests+=x.estimated||0;
-    map[key].count++;
-    if((x.estimated||0)>(map[key].rep.estimated||0)) map[key].rep=x;
+  const n=list.length;
+  const parent=list.map((_,i)=>i);
+  function find(i){ while(parent[i]!==i){ parent[i]=parent[parent[i]]; i=parent[i]; } return i; }
+  function uni(i,j){ const a=find(i),b=find(j); if(a!==b) parent[a]=b; }
+  const ph=list.map(phoneKey), nm=list.map(x=>normName(x.operator));
+  // 1) union by shared phone
+  const phMap={}; ph.forEach((p,i)=>{ if(p){ if(phMap[p]!==undefined)uni(i,phMap[p]); else phMap[p]=i; } });
+  // 2) union by identical normalised name
+  const nmMap={}; nm.forEach((s,i)=>{ if(s){ if(nmMap[s]!==undefined)uni(i,nmMap[s]); else nmMap[s]=i; } });
+  // 3) union by fuzzy name (spelling variants), blocked by first char for speed
+  const blocks={};
+  nm.forEach((s,i)=>{ if(s&&s.length>=6){ const k=s[0]; (blocks[k]=blocks[k]||[]).push(i); } });
+  for(const k in blocks){ const arr=blocks[k];
+    for(let a=0;a<arr.length;a++) for(let b=a+1;b<arr.length;b++){
+      const i=arr[a],j=arr[b]; if(find(i)===find(j))continue;
+      if(simRatio(nm[i],nm[j])>=0.86) uni(i,j);
+    }
+  }
+  const map={}, order=[];
+  list.forEach((x,i)=>{
+    const r=find(i);
+    if(!map[r]){ map[r]={rep:x,ids:[],guests:0,count:0}; order.push(r); }
+    map[r].ids.push(x.visitId);
+    map[r].guests+=x.estimated||0;
+    map[r].count++;
+    if((x.estimated||0)>(map[r].rep.estimated||0)) map[r].rep=x;
   });
-  return order.map(k=>map[k]).sort((a,b)=>b.guests-a.guests);
+  return order.map(r=>map[r]).sort((a,b)=>b.guests-a.guests);
 }
 function uncCard(g,i){
   const x=g.rep;
