@@ -699,16 +699,20 @@ function renderKPIs(){
   const arrivedRev=arrived.reduce((s,x)=>s+(x.effectiveRevenue||0),0);
   const confirmed=e.filter(x=>x.status==="Confirmed"||x.status==="Arrived").length;
   const newCount=e.filter(x=>x.status==="New").length;
+  const contacted=e.filter(x=>["Contacted","Confirmed","Arrived","No-Show"].indexOf(x.status)>=0).length;
+  const contactedOps=new Set(e.filter(x=>["Contacted","Confirmed","Arrived","No-Show"].indexOf(x.status)>=0).map(x=>x.operatorId||x.operatorKey||x.operator)).size;
+  const coverage=ops?Math.round(contactedOps/ops*100):0;
   const fu=followupBuckets(e);
-  const convRate = e.length? Math.round(arrived.length/e.length*100):0;
+  const convRate = contacted? Math.round(arrived.length/contacted*100):0;
   const orgLabel = overviewSegment==="All" ? "Unique Operators" : "Organisations";
 
   const cards=[
     {c:"ice",   l:orgLabel,           v:fmtN(ops),         m:e.length+" total engagements", ic:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>'},
+    {c:"green", l:"Operators Contacted", v:fmtN(contactedOps)+" / "+fmtN(ops), m:coverage+"% contacted to date", ic:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>'},
     {c:"amber", l:"Pipeline Guests",  v:fmtN(totalGuests), m:"effective guest volume", ic:'<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/>'},
     {c:"green", l:"Projected Revenue",v:fmtPKRk(totalRev), m:"@ PKR "+fmtN(DATA.ticketPrice)+" / guest", ic:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>'},
     {c:"violet",l:"Confirmed Revenue",v:fmtPKRk(arrivedRev),m:arrived.length+" arrived groups", ic:'<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'},
-    {c:"ice",   l:"Conversion",       v:convRate+"%",      m:"engagements marked arrived", ic:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'},
+    {c:"ice",   l:"Conversion",       v:convRate+"%",      m:arrived.length+" arrived of "+contacted+" contacted", ic:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'},
     {c:"rose",  l:"Open Follow-ups",  v:fmtN(fu.over.length+fu.due.length), m:fu.over.length+" overdue", ic:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'},
     {c:"amber", l:"Awaiting Contact", v:fmtN(fu.unc.length), m:newCount+" new enquiries", ic:'<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>'}
   ];
