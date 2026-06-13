@@ -695,7 +695,7 @@ function renderKPIs(){
   const e=overviewEng();
   const ops=new Set(e.map(x=>x.operatorId||x.operatorKey||x.operator)).size;
   const totalGuests=e.reduce((s,x)=>s+(x.effectiveGuests||0),0);
-  const totalRev=e.reduce((s,x)=>s+(x.effectiveRevenue||0),0);
+  const totalRev=e.reduce((s,x)=>s+((x.pipelineRevenue!=null?x.pipelineRevenue:x.effectiveRevenue)||0),0);
   const arrived=e.filter(x=>x.status==="Arrived");
   const arrivedRev=arrived.reduce((s,x)=>s+(x.effectiveRevenue||0),0);
   const confirmed=e.filter(x=>x.status==="Confirmed"||x.status==="Arrived").length;
@@ -712,7 +712,7 @@ function renderKPIs(){
     {c:"green", l:"Operators Contacted", v:fmtN(contactedOps)+" / "+fmtN(ops), m:coverage+"% contacted to date", ic:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>'},
     {c:"amber", l:"Pipeline Guests",  v:fmtN(totalGuests), m:"effective guest volume", ic:'<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/>'},
     {c:"green", l:"Projected Revenue",v:fmtPKRk(totalRev), m:"@ PKR "+fmtN(DATA.ticketPrice)+" / guest", ic:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>'},
-    {c:"violet",l:"Confirmed Revenue",v:fmtPKRk(arrivedRev),m:arrived.length+" arrived groups", ic:'<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'},
+    {c:"violet",l:"Confirmed Revenue",v:fmtPKRk(arrivedRev),m:arrived.length+" arrived \u00b7 actuals where recorded", ic:'<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'},
     {c:"ice",   l:"Conversion",       v:convRate+"%",      m:arrived.length+" arrived of "+contacted+" contacted", ic:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'},
     {c:"rose",  l:"Open Follow-ups",  v:fmtN(fu.over.length+fu.due.length), m:fu.over.length+" overdue", ic:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'},
     {c:"amber", l:"Awaiting Contact", v:fmtN(fu.unc.length), m:newCount+" new enquiries", ic:'<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>'}
@@ -889,7 +889,7 @@ function renderEngTable(){
       '<td>'+(x.city||"\u2013")+'</td>'+
       '<td>'+dPretty(x.visitDate)+'</td>'+
       '<td class="num">'+fmtN(x.effectiveGuests)+(x.hasActual?' <span class="chip" style="color:var(--green)">actual</span>':'')+'</td>'+
-      '<td class="num">'+fmtN(x.effectiveRevenue)+'</td>'+
+      '<td class="num">'+fmtN(x.effectiveRevenue)+(x.hasActualRev?' <span class="chip" style="color:var(--green)">actual</span>':'')+'</td>'+
       '<td><span class="badge b-'+x.status+'">'+x.status+'</span></td>'+
       '<td>'+(x.followUp?dPretty(x.followUp):'<span class="muted">\u2013</span>')+'</td>'+
     '</tr>';
@@ -915,7 +915,8 @@ function openDrawer(vid){
       fact("Visit Date",dPretty(x.visitDate))+fact("Logged",dPretty(x.timestamp))+
       fact("Estimated Guests",fmtN(x.estimated))+fact("Guest Type",x.guestType||"\u2013")+
       fact("Activities",x.activity||"\u2013")+fact("Discount",Math.round((x.discountRate||0)*100)+"%")+
-      fact("Effective Revenue",fmtPKR(x.effectiveRevenue))+fact("Previous Visit",x.prevVisit||"\u2013")+
+      fact("Pipeline Revenue",fmtPKR(x.pipelineRevenue!=null?x.pipelineRevenue:x.effectiveRevenue))+fact("Actual Revenue",x.hasActualRev?fmtPKR(x.actualRevenue):"\u2013")+
+      fact("Previous Visit",x.prevVisit||"\u2013")+fact("Source",x.source||"Form")+
     '</div>'+
     '<div class="drow">'+
       '<div class="dfield"><label>Status</label><select id="edStatus">'+statusOpts+'</select></div>'+
@@ -927,7 +928,11 @@ function openDrawer(vid){
     '</div>'+
     '<div class="drow">'+
       '<div class="dfield"><label>Actual Arrived (override)</label><input type="number" id="edActual" value="'+(x.actualOverride!==""?x.actualOverride:"")+'" placeholder="blank = use estimate"></div>'+
+      '<div class="dfield"><label>Actual Revenue (PKR)</label><input type="number" id="edActualRev" value="'+(x.actualRevenue!==""&&x.actualRevenue!=null?x.actualRevenue:"")+'" placeholder="blank = use pipeline est."></div>'+
+    '</div>'+
+    '<div class="drow">'+
       '<div class="dfield"><label>Follow-up Date</label><input type="date" id="edFollow" value="'+dOnly(x.followUp)+'"></div>'+
+      '<div class="dfield"></div>'+
     '</div>'+
     '<div class="drow">'+
       '<div class="dfield"><label>Call by (rep)</label><select id="edRep"><option value="">Select rep...</option>'+REPS.map(r=>'<option value="'+esc(r.name)+'">'+esc(r.name)+' \u00b7 '+esc(r.role)+'</option>').join('')+'</select></div>'+
@@ -948,7 +953,7 @@ $("dSave").onclick=async()=>{
   try{
     await postAction({action:"updateEngagement",visitId:activeVid,
       status:$("edStatus").value, tier:$("edTier").value, owner:$("edOwner").value,
-      actualOverride:$("edActual").value, followUp:$("edFollow").value, visitDate:$("edVisit").value,
+      actualOverride:$("edActual").value, actualRevenue:$("edActualRev").value, followUp:$("edFollow").value, visitDate:$("edVisit").value,
       note:$("edNote").value });
     toast("Engagement updated","ok"); closeDrawer();
   }catch(err){ toast("Save failed: "+err.message,"bad"); }
