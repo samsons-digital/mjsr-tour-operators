@@ -536,9 +536,10 @@ const $ = id => document.getElementById(id);
 const fmtN = n => (Number(n)||0).toLocaleString("en-US");
 const fmtPKR = n => "PKR " + (Number(n)||0).toLocaleString("en-US");
 const fmtPKRk = n => { n=Number(n)||0; if(n>=1e6) return "PKR "+(n/1e6).toFixed(2)+"M"; if(n>=1e3) return "PKR "+(n/1e3).toFixed(0)+"k"; return "PKR "+n; };
-function dOnly(iso){ if(!iso) return ""; const d=new Date(iso); if(isNaN(d)) return ""; return d.toISOString().slice(0,10); }
+function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function dOnly(iso){ if(!iso) return ""; const d=new Date(iso); if(isNaN(d)) return ""; return ymd(d); }
 function dPretty(iso){ if(!iso) return "\u2013"; const d=new Date(iso); if(isNaN(d)) return "\u2013"; return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}); }
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+function todayStr(){ return ymd(new Date()); }
 
 /* Segment taxonomy. The historical sheet stores Colleges and Universities under
    one combined "College / University" type, so those rows are split by name. New
@@ -1109,7 +1110,7 @@ async function quickContact(vid){
 /* ----- calls / call activity ----- */
 function callPeriodRange(){
   const p=$("callPeriod")?$("callPeriod").value:"7d"; const now=new Date();
-  const iso=d=>d.toISOString().slice(0,10);
+  const iso=d=>ymd(d);
   const back=n=>{const d=new Date(now);d.setDate(d.getDate()-n);return iso(d);};
   if(p==="today") return [todayStr(),todayStr()];
   if(p==="7d") return [back(6),todayStr()];
@@ -1215,7 +1216,7 @@ function initReports(){
 }
 $("repPreset").addEventListener("change",()=>{
   const p=$("repPreset").value; const now=new Date();
-  const iso=d=>d.toISOString().slice(0,10);
+  const iso=d=>ymd(d);
   const back=n=>{const d=new Date(now);d.setDate(d.getDate()-n);return iso(d);};
   if(p==="all"){ const ds=DATA.engagements.map(x=>dOnly(x.visitDate)).filter(Boolean).sort(); if(ds.length){$("repFrom").value=ds[0];$("repTo").value=ds[ds.length-1];} }
   else if(p==="7d"){ $("repFrom").value=back(6); $("repTo").value=todayStr(); }
@@ -1304,17 +1305,17 @@ function renderReportCharts(rows, from, to){
   const spanDays=(start&&end)?Math.round((end-start)/86400000)+1:9999;
   const mode=spanDays<=31?"day":spanDays<=120?"week":"month";
   const buckets={}; const order=[];
-  function keyFor(d){
-    if(mode==="day") return d.toISOString().slice(0,10);
-    if(mode==="week"){ const t=new Date(d); const day=(t.getDay()+6)%7; t.setDate(t.getDate()-day); return t.toISOString().slice(0,10); }
-    return d.toISOString().slice(0,7);
+  function keyFor(ds){
+    if(mode==="day") return ds;
+    if(mode==="week"){ const t=new Date(ds+"T00:00:00"); const day=(t.getDay()+6)%7; t.setDate(t.getDate()-day); return ymd(t); }
+    return ds.slice(0,7);
   }
   function label(k){
     if(mode==="day"){const d=new Date(k+"T00:00:00");return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short"});}
     if(mode==="week"){const d=new Date(k+"T00:00:00");return "w/c "+d.toLocaleDateString("en-GB",{day:"2-digit",month:"short"});}
     const d=new Date(k+"-01");return d.toLocaleDateString("en-GB",{month:"short",year:"2-digit"});
   }
-  rows.forEach(x=>{const ds=dOnly(x.visitDate);if(!ds)return;const k=keyFor(new Date(ds+"T00:00:00"));if(!buckets[k]){buckets[k]={i:0,v:0};order.push(k);}buckets[k].i++;if(x.status==="Arrived")buckets[k].v++;});
+  rows.forEach(x=>{const ds=dOnly(x.visitDate);if(!ds)return;const k=keyFor(ds);if(!buckets[k]){buckets[k]={i:0,v:0};order.push(k);}buckets[k].i++;if(x.status==="Arrived")buckets[k].v++;});
   order.sort();
   repCharts.trend=new Chart($("rcTrend"),{data:{labels:order.map(label),datasets:[
       {type:"line",label:"Engagements",data:order.map(k=>buckets[k].i),borderColor:"#5fd3e8",backgroundColor:"rgba(95,211,232,0.15)",fill:true,tension:.35,borderWidth:2,pointRadius:2},
