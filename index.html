@@ -178,6 +178,9 @@ tbody td.op{color:var(--ink);font-weight:500}
   color:var(--ink-dim);white-space:pre-wrap;max-height:170px;overflow:auto;line-height:1.55}
 .drawer-foot{padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:10px}
 .drawer-foot .btn{flex:1;justify-content:center}
+.btn.danger{flex:0 0 auto;color:var(--rose);border-color:rgba(225,75,95,.4);background:rgba(225,75,95,.06)}
+.btn.danger:hover{background:rgba(225,75,95,.12)}
+.btn.danger.armed{background:var(--rose);color:#fff;border-color:var(--rose)}
 
 /* operators */
 .opgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
@@ -492,6 +495,7 @@ tbody td.op{color:var(--ink);font-weight:500}
   </div>
   <div class="drawer-body" id="dBody"></div>
   <div class="drawer-foot">
+    <button class="btn danger" id="dDelete">Delete</button>
     <button class="btn ghost" id="dLog">Log Call</button>
     <button class="btn primary" id="dSave">Save Changes</button>
   </div>
@@ -531,6 +535,8 @@ let repCharts = {};
 let callsCharts = {};
 let engSort = { key: "visitDate", dir: -1 };
 let activeVid = null;
+let activeRow = null;
+let delArmed = false, delTimer = null;
 
 const $ = id => document.getElementById(id);
 const fmtN = n => (Number(n)||0).toLocaleString("en-US");
@@ -882,7 +888,7 @@ function renderEngTable(){
   if(!rows.length){ body.innerHTML='<tr><td colspan="9" class="state" style="padding:40px">No engagements match these filters.</td></tr>'; $("engSummary").textContent=""; return; }
   body.innerHTML=rows.map(x=>{
     const act=(x.activity||"").split(",").slice(0,2).map(a=>'<span class="chip">'+a.trim()+'</span>').join("");
-    return '<tr onclick="openDrawer(\''+x.visitId+'\')">'+
+    return '<tr onclick="openRow('+x.rowNumber+')">'+
       '<td class="muted">'+ (x.visitId||"\u2013") +'</td>'+
       '<td class="op">'+x.operator+(x.prevVisit==="Yes"?' <span class="chip" style="color:var(--green)">repeat</span>':'')+'</td>'+
       '<td>'+x.orgType+'</td>'+
@@ -902,8 +908,14 @@ $("exportEng").onclick=()=>exportCSV(getFilteredEng(),"mjsr_engagements");
 
 /* ----- drawer ----- */
 function openDrawer(vid){
-  const x=DATA.engagements.find(e=>e.visitId===vid); if(!x) return;
-  activeVid=vid;
+  const x=DATA.engagements.find(e=>e.visitId===vid); if(!x) return; openEng_(x);
+}
+function openRow(rn){
+  const x=DATA.engagements.find(e=>e.rowNumber===rn); if(!x) return; openEng_(x);
+}
+function openEng_(x){
+  activeVid=x.visitId||""; activeRow=x.rowNumber!=null?x.rowNumber:null;
+  delArmed=false; if($("dDelete")){ $("dDelete").textContent="Delete"; $("dDelete").classList.remove("armed"); $("dDelete").disabled=false; }
   $("dVid").textContent=(x.visitId||"")+(x.operatorId?"  \u00b7  "+x.operatorId:"");
   $("dName").textContent=x.operator;
   $("dMeta").textContent=x.orgType+(x.city?" \u00b7 "+x.city:"")+" \u00b7 "+(x.source||"Form");
@@ -959,7 +971,7 @@ function openDrawer(vid){
 }
 function fact(k,v){return '<div class="fact"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';}
 function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-function closeDrawer(){ $("scrim").classList.remove("open"); $("drawer").classList.remove("open"); activeVid=null; }
+function closeDrawer(){ $("scrim").classList.remove("open"); $("drawer").classList.remove("open"); activeVid=null; activeRow=null; clearTimeout(delTimer); delArmed=false; }
 $("scrim").onclick=closeDrawer;
 
 $("dSave").onclick=async()=>{
@@ -985,9 +997,25 @@ $("dLog").onclick=async()=>{
   const note=$("edNote").value.trim();
   const btn=$("dLog"); btn.textContent="Logging..."; btn.disabled=true;
   try{ await postAction({action:"logCall",visitId:activeVid,rep:rep,outcome:outcome,note:note,advanceToContacted:true});
-    toast("Call logged for "+rep,"ok"); openDrawer(activeVid);
+    toast("Call logged for "+rep,"ok"); activeVid?openDrawer(activeVid):openRow(activeRow);
   }catch(err){ toast("Failed: "+err.message,"bad"); }
   btn.textContent="Log Call"; btn.disabled=false;
+};
+
+$("dDelete").onclick=async()=>{
+  if(activeRow==null){ toast("Nothing selected to delete","bad"); return; }
+  const btn=$("dDelete");
+  if(!delArmed){
+    delArmed=true; btn.textContent="Confirm delete"; btn.classList.add("armed");
+    delTimer=setTimeout(()=>{ delArmed=false; btn.textContent="Delete"; btn.classList.remove("armed"); },4000);
+    return;
+  }
+  clearTimeout(delTimer); delArmed=false;
+  const x=DATA.engagements.find(e=>e.rowNumber===activeRow);
+  btn.textContent="Deleting..."; btn.disabled=true; btn.classList.remove("armed");
+  try{ await postAction({action:"deleteEngagement",rowNumber:activeRow,visitId:activeVid,operator:x?x.operator:""});
+    toast("Engagement deleted","ok"); closeDrawer();
+  }catch(err){ toast("Delete failed: "+err.message,"bad"); btn.textContent="Delete"; btn.disabled=false; }
 };
 
 /* ----- operators ----- */
