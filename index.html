@@ -918,6 +918,21 @@ function openDrawer(vid){
       fact("Pipeline Revenue",fmtPKR(x.pipelineRevenue!=null?x.pipelineRevenue:x.effectiveRevenue))+fact("Actual Revenue",x.hasActualRev?fmtPKR(x.actualRevenue):"\u2013")+
       fact("Previous Visit",x.prevVisit||"\u2013")+fact("Source",x.source||"Form")+
     '</div>'+
+    '<div style="font-size:.72rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint);margin:6px 0 2px">Correct details</div>'+
+    '<div class="dfield"><label>Operator name</label><input id="edName" value="'+esc(x.operator||"")+'"></div>'+
+    '<div class="drow">'+
+      '<div class="dfield"><label>Contact</label><input id="edContact" value="'+esc(x.contact||"")+'"></div>'+
+      '<div class="dfield"><label>Phone</label><input id="edPhone" value="'+esc(x.phone||"")+'"></div>'+
+    '</div>'+
+    '<div class="drow">'+
+      '<div class="dfield"><label>City</label><input id="edCity" value="'+esc(x.city||"")+'"></div>'+
+      '<div class="dfield"><label>Estimated Guests</label><input type="number" id="edEst" value="'+(x.estimated!=null?x.estimated:"")+'"></div>'+
+    '</div>'+
+    '<div class="drow">'+
+      '<div class="dfield"><label>Guest Type</label><input id="edGuestType" value="'+esc(x.guestType||"")+'"></div>'+
+      '<div class="dfield"><label>Discount (0 to 1, e.g. 0.10)</label><input type="number" id="edDiscount" step="0.05" min="0" max="1" value="'+(x.discountRate!=null?x.discountRate:"")+'"></div>'+
+    '</div>'+
+    '<div class="dfield"><label>Activities</label><input id="edActivity" value="'+esc(x.activity||"")+'"></div>'+
     '<div class="drow">'+
       '<div class="dfield"><label>Status</label><select id="edStatus">'+statusOpts+'</select></div>'+
       '<div class="dfield"><label>Visit Date</label><input type="date" id="edVisit" value="'+dOnly(x.visitDate)+'"></div>'+
@@ -953,6 +968,9 @@ $("dSave").onclick=async()=>{
   try{
     await postAction({action:"updateEngagement",visitId:activeVid,
       status:$("edStatus").value, tier:$("edTier").value, owner:$("edOwner").value,
+      operator:$("edName").value, contact:$("edContact").value, phone:$("edPhone").value,
+      city:$("edCity").value, estimated:$("edEst").value, guestType:$("edGuestType").value,
+      activity:$("edActivity").value, discount:$("edDiscount").value,
       actualOverride:$("edActual").value, actualRevenue:$("edActualRev").value, followUp:$("edFollow").value, visitDate:$("edVisit").value,
       note:$("edNote").value });
     toast("Engagement updated","ok"); closeDrawer();
