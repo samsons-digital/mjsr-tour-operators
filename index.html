@@ -529,7 +529,7 @@ let DATA = { engagements: [], calls: [], ticketPrice: 2300, validStatus: ["New",
 let charts = {};
 let repCharts = {};
 let callsCharts = {};
-let engSort = { key: "timestamp", dir: -1 };
+let engSort = { key: "visitDate", dir: -1 };
 let activeVid = null;
 
 const $ = id => document.getElementById(id);
@@ -867,8 +867,15 @@ document.querySelectorAll("#engTable thead th").forEach(th=>{
 function renderEngTable(){
   let rows=getFilteredEng();
   const k=engSort.key,dir=engSort.dir;
-  rows.sort((a,b)=>{let va=a[k],vb=b[k];
-    if(k==="visitDate"||k==="followUp"||k==="timestamp"){va=va||"";vb=vb||"";}
+  rows.sort((a,b)=>{
+    if(k==="visitDate"||k==="followUp"||k==="timestamp"){
+      const da=dOnly(a[k]), db=dOnly(b[k]);
+      if(da&&db&&da!==db) return da<db?-1*dir:1*dir;
+      if(!da&&db) return 1;            // undated always last
+      if(da&&!db) return -1;
+      return String(b.visitId).localeCompare(String(a.visitId)); // tiebreak: newest id first
+    }
+    let va=a[k],vb=b[k];
     if(typeof va==="number"){return (va-vb)*dir;}
     return String(va).localeCompare(String(vb))*dir;});
   const body=$("engBody");
@@ -910,7 +917,10 @@ function openDrawer(vid){
       fact("Activities",x.activity||"\u2013")+fact("Discount",Math.round((x.discountRate||0)*100)+"%")+
       fact("Effective Revenue",fmtPKR(x.effectiveRevenue))+fact("Previous Visit",x.prevVisit||"\u2013")+
     '</div>'+
-    '<div class="dfield"><label>Status</label><select id="edStatus">'+statusOpts+'</select></div>'+
+    '<div class="drow">'+
+      '<div class="dfield"><label>Status</label><select id="edStatus">'+statusOpts+'</select></div>'+
+      '<div class="dfield"><label>Visit Date</label><input type="date" id="edVisit" value="'+dOnly(x.visitDate)+'"></div>'+
+    '</div>'+
     '<div class="drow">'+
       '<div class="dfield"><label>Tier</label><select id="edTier">'+tiers+'</select></div>'+
       '<div class="dfield"><label>Owner</label><input id="edOwner" value="'+esc(x.owner)+'" placeholder="handler"></div>'+
@@ -938,7 +948,7 @@ $("dSave").onclick=async()=>{
   try{
     await postAction({action:"updateEngagement",visitId:activeVid,
       status:$("edStatus").value, tier:$("edTier").value, owner:$("edOwner").value,
-      actualOverride:$("edActual").value, followUp:$("edFollow").value,
+      actualOverride:$("edActual").value, followUp:$("edFollow").value, visitDate:$("edVisit").value,
       note:$("edNote").value });
     toast("Engagement updated","ok"); closeDrawer();
   }catch(err){ toast("Save failed: "+err.message,"bad"); }
