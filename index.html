@@ -1301,12 +1301,13 @@ function buildReport(){
   const rows=reportRows();
   const from=$("repFrom").value,to=$("repTo").value;
   const ops=new Set(rows.map(x=>x.operatorId||x.operator)).size;
-  const guests=rows.reduce((s,x)=>s+x.effectiveGuests,0);
-  const rev=rows.reduce((s,x)=>s+x.effectiveRevenue,0);
-  const arrived=rows.filter(x=>x.status==="Arrived").length;
+  const arrivedRows=rows.filter(x=>x.status==="Arrived");
+  const arrived=arrivedRows.length;
+  const guests=arrivedRows.reduce((s,x)=>s+x.effectiveGuests,0);   // actual arrived guests
+  const rev=arrivedRows.reduce((s,x)=>s+x.effectiveRevenue,0);     // actual revenue from arrivals
 
-  // segment table
-  const seg={}; rows.forEach(x=>{const s=fineSegment(x);seg[s]=seg[s]||{groups:0,guests:0,rev:0};seg[s].groups++;seg[s].guests+=x.effectiveGuests;seg[s].rev+=x.effectiveRevenue;});
+  // segment table - actual arrivals only (arrived groups, actual guests, actual revenue)
+  const seg={}; arrivedRows.forEach(x=>{const s=fineSegment(x);seg[s]=seg[s]||{groups:0,guests:0,rev:0};seg[s].groups++;seg[s].guests+=x.effectiveGuests;seg[s].rev+=x.effectiveRevenue;});
   const segRows=Object.keys(seg).sort((a,b)=>seg[b].rev-seg[a].rev).map(k=>{const s=seg[k];
     return '<tr><td class="s">'+k+'</td><td class="num">'+s.groups+'</td><td class="num">'+fmtN(s.guests)+'</td><td class="num">'+(s.groups?Math.round(s.guests/s.groups):0)+'</td><td class="num">'+fmtPKR(s.rev)+'</td></tr>';}).join("");
 
@@ -1326,17 +1327,17 @@ function buildReport(){
       '<div class="rep-sub">Malam Jabba Ski Resort \u00b7 Samsons Group &nbsp;|&nbsp; Period: '+(from?dPretty(from):"start")+' to '+(to?dPretty(to):"now")+' &nbsp;|&nbsp; Generated '+dPretty(new Date().toISOString())+'</div></div></div>'+
     '<div class="rep-kpis">'+
       repKpi(fmtN(rows.length),"Engagements")+repKpi(fmtN(arrived),"Visits achieved")+repKpi(fmtN(ops),"Organisations")+
-      repKpi(fmtN(guests),"Guests (effective)")+repKpi(fmtPKRk(rev),"Revenue (projected)")+
+      repKpi(fmtN(guests),"Guests (actual)")+repKpi(fmtPKRk(rev),"Revenue (actual)")+
     '</div>'+
     '<div class="rep-section"><h4>Engagement Analytics</h4><div class="rep-charts">'+
       '<div class="rc-card"><div class="rc-h">Engagements and Visits by Stakeholder</div><div class="rc-box"><canvas id="rcSeg"></canvas></div></div>'+
       '<div class="rc-card"><div class="rc-h">Engagement Share by Stakeholder</div><div class="rc-box"><canvas id="rcShare"></canvas></div></div>'+
       '<div class="rc-card wide"><div class="rc-h">Visit Trend over Period</div><div class="rc-box"><canvas id="rcTrend"></canvas></div></div>'+
     '</div></div>'+
-    '<div class="rep-section"><h4>Segment Comparison</h4><table class="rep-table"><thead><tr><th>Segment</th><th class="num">Groups</th><th class="num">Guests</th><th class="num">Avg Size</th><th class="num">Revenue</th></tr></thead><tbody>'+segRows+'</tbody></table></div>'+
+    '<div class="rep-section"><h4>Segment Comparison</h4><table class="rep-table"><thead><tr><th>Segment</th><th class="num">Arrived</th><th class="num">Guests</th><th class="num">Avg Size</th><th class="num">Revenue</th></tr></thead><tbody>'+segRows+'</tbody></table></div>'+
     '<div class="rep-section"><h4>Top Operators by Revenue</h4><table class="rep-table"><thead><tr><th class="num">#</th><th>Operator</th><th class="num">Visits</th><th class="num">Guests</th><th class="num">Revenue</th></tr></thead><tbody>'+opRows+'</tbody></table></div>'+
     '<div class="rep-section"><h4>Top Source Cities</h4><table class="rep-table"><thead><tr><th>City / Region</th><th class="num">Engagements</th><th class="num">Guests</th></tr></thead><tbody>'+cityRows+'</tbody></table></div>'+
-    '<div class="rep-sub" style="margin-top:24px;border-top:1px solid var(--line);padding-top:14px">The period filters on visit date. Engagements count records with a visit date in the period; visits achieved count those marked Arrived. Leads with no visit date yet are not shown here. Revenue is computed at PKR '+fmtN(DATA.ticketPrice)+' per guest, net of requested discount, using actual arrivals where recorded, otherwise estimated guests.</div>';
+    '<div class="rep-sub" style="margin-top:24px;border-top:1px solid var(--line);padding-top:14px">The period filters on visit date. Engagements count records with a visit date in the period; Visits achieved counts those marked Arrived. Guests (actual), Revenue (actual) and the Segment Comparison reflect arrived visits only, using recorded actual guests and revenue where entered, otherwise the estimate for that visit. Revenue is at PKR '+fmtN(DATA.ticketPrice)+' per guest, net of requested discount.</div>';
 
   renderReportCharts(rows, from, to);
 }
