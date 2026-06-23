@@ -1320,6 +1320,37 @@ function buildReport(){
   const bc={}; rows.forEach(x=>{const c=(x.city||"Unknown").trim()||"Unknown";const key=c.charAt(0).toUpperCase()+c.slice(1).toLowerCase();bc[key]=bc[key]||{g:0,c:0};bc[key].c++;bc[key].g+=x.effectiveGuests;});
   const cityRows=Object.keys(bc).sort((a,b)=>bc[b].g-bc[a].g).slice(0,12).map(k=>'<tr><td class="s">'+k+'</td><td class="num">'+bc[k].c+'</td><td class="num">'+fmtN(bc[k].g)+'</td></tr>').join("");
 
+  // gate comparison - each segment plus walk-ins as a share of the total resort gate for the period
+  const gateData=(DATA.gate||[]);
+  const inGatePeriod=(g)=>{
+    if(g.periodType==="Annual") return false;
+    if(g.periodType==="Daily"){const d=String(g.periodKey||"");if(from&&d<from)return false;if(to&&d>to)return false;return true;}
+    const mk=String(g.periodKey||"").slice(0,7);
+    if(from&&mk<from.slice(0,7))return false;
+    if(to&&mk>to.slice(0,7))return false;
+    return true;
+  };
+  const liveGate=gateData.filter(inGatePeriod);
+  const gateFoot=liveGate.reduce((s,g)=>s+(g.footfall||0),0);
+  const gateRev=liveGate.reduce((s,g)=>s+(g.revenue||0),0);
+  const periodArrived=DATA.engagements.filter(x=>{const d=dOnly(x.visitDate);if(from&&(!d||d<from))return false;if(to&&(!d||d>to))return false;return x.status==="Arrived";});
+  const segShare={}; periodArrived.forEach(x=>{const s=fineSegment(x);segShare[s]=segShare[s]||{f:0,r:0};segShare[s].f+=x.effectiveGuests;segShare[s].r+=x.effectiveRevenue;});
+  const orgFoot=periodArrived.reduce((s,x)=>s+x.effectiveGuests,0);
+  const orgRev=periodArrived.reduce((s,x)=>s+x.effectiveRevenue,0);
+  const walkFoot=Math.max(0,gateFoot-orgFoot), walkRev=Math.max(0,gateRev-orgRev);
+  const pf=v=>gateFoot>0?(Math.round(v/gateFoot*1000)/10)+"%":"\u2013";
+  const pr=v=>gateRev>0?(Math.round(v/gateRev*1000)/10)+"%":"\u2013";
+  const segOrder=["Tour Operators","Schools","Colleges","Universities","Corporate","Private Groups","Other"];
+  const gsKeys=segOrder.filter(k=>segShare[k]).concat(Object.keys(segShare).filter(k=>segOrder.indexOf(k)<0));
+  let gateShareRows=gsKeys.map(k=>{const s=segShare[k];return '<tr><td class="s">'+k+'</td><td class="num">'+fmtN(s.f)+'</td><td class="num">'+pf(s.f)+'</td><td class="num">'+fmtPKR(s.r)+'</td><td class="num">'+pr(s.r)+'</td></tr>';}).join("");
+  gateShareRows+='<tr><td class="s">Walk-ins (retail)</td><td class="num">'+fmtN(walkFoot)+'</td><td class="num">'+pf(walkFoot)+'</td><td class="num">'+fmtPKR(walkRev)+'</td><td class="num">'+pr(walkRev)+'</td></tr>';
+  gateShareRows+='<tr style="font-weight:600"><td class="s">Total Gate</td><td class="num">'+fmtN(gateFoot)+'</td><td class="num">'+(gateFoot>0?"100%":"\u2013")+'</td><td class="num">'+fmtPKR(gateRev)+'</td><td class="num">'+(gateRev>0?"100%":"\u2013")+'</td></tr>';
+  const gateNote=(gateFoot===0&&gateRev===0)
+    ? 'No total-gate figures are logged for this period yet, so walk-ins and the percentage split cannot be shown. The rows above are the booked groups recorded in the portal. Log monthly or daily gate entries to populate the comparison.'
+    : 'Walk-ins are the total gate minus all booked groups. Percentages are each channel\u2019s share of the total gate for the selected period.';
+  const baseline=gateData.filter(g=>g.periodType==="Annual").sort((a,b)=>a.periodKey<b.periodKey?-1:1);
+  const baseRows=baseline.map(g=>'<tr><td class="s">'+esc(g.periodKey)+'</td><td class="num">'+fmtN(g.footfall)+'</td><td class="num">'+fmtPKR(g.revenue)+'</td></tr>').join("");
+
   const segSel=$("repSegment").value;
   const repTitle=(segSel?segSel+" ":"")+"Engagement Report";
   $("repCard").innerHTML=
@@ -1335,6 +1366,8 @@ function buildReport(){
       '<div class="rc-card wide"><div class="rc-h">Visit Trend over Period</div><div class="rc-box"><canvas id="rcTrend"></canvas></div></div>'+
     '</div></div>'+
     '<div class="rep-section"><h4>Segment Comparison</h4><table class="rep-table"><thead><tr><th>Segment</th><th class="num">Arrived</th><th class="num">Guests</th><th class="num">Avg Size</th><th class="num">Revenue</th></tr></thead><tbody>'+segRows+'</tbody></table></div>'+
+    '<div class="rep-section"><h4>Gate Share \u2013 Operators vs Walk-ins</h4><table class="rep-table"><thead><tr><th>Channel</th><th class="num">Footfall</th><th class="num">Footfall %</th><th class="num">Revenue</th><th class="num">Revenue %</th></tr></thead><tbody>'+gateShareRows+'</tbody></table><div class="rep-sub" style="margin-top:10px">'+gateNote+'</div></div>'+
+    (baseRows?'<div class="rep-section"><h4>Historical Gate Baseline (annual)</h4><table class="rep-table"><thead><tr><th>Year</th><th class="num">Footfall</th><th class="num">Revenue</th></tr></thead><tbody>'+baseRows+'</tbody></table><div class="rep-sub" style="margin-top:10px">Total resort gate (walk-ins plus all groups), from verified historical records. Going-forward monthly and daily entries drive the live split above.</div></div>':'')+
     '<div class="rep-section"><h4>Top Operators by Revenue</h4><table class="rep-table"><thead><tr><th class="num">#</th><th>Operator</th><th class="num">Visits</th><th class="num">Guests</th><th class="num">Revenue</th></tr></thead><tbody>'+opRows+'</tbody></table></div>'+
     '<div class="rep-section"><h4>Top Source Cities</h4><table class="rep-table"><thead><tr><th>City / Region</th><th class="num">Engagements</th><th class="num">Guests</th></tr></thead><tbody>'+cityRows+'</tbody></table></div>'+
     '<div class="rep-sub" style="margin-top:24px;border-top:1px solid var(--line);padding-top:14px">The period filters on visit date. Engagements count records with a visit date in the period; Visits achieved counts those marked Arrived. Guests (actual), Revenue (actual) and the Segment Comparison reflect arrived visits only, using recorded actual guests and revenue where entered, otherwise the estimate for that visit. Revenue is at PKR '+fmtN(DATA.ticketPrice)+' per guest, net of requested discount.</div>';
