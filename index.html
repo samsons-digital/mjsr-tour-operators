@@ -63,6 +63,7 @@ input,select,textarea{font-family:inherit}
 .tab.active{background:linear-gradient(135deg,rgba(227,151,10,0.18),rgba(227,151,10,0.06));
   color:var(--ice);box-shadow:inset 0 0 0 1px rgba(227,151,10,0.35)}
 .tab .pill{font-size:.66rem;background:rgba(245,182,86,0.16);color:var(--amber);padding:1px 7px;border-radius:20px;font-weight:600}
+.btn.xs{padding:4px 10px;font-size:.72rem}
 
 .view{display:none;animation:fade .4s ease}
 .view.active{display:block}
@@ -309,6 +310,7 @@ tbody td.op{color:var(--ink);font-weight:500}
     <button class="tab" data-view="followups"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Follow-ups <span class="pill" id="fuCount">0</span></button>
     <button class="tab" data-view="calls"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>Calls <span class="pill" id="callCount">0</span></button>
     <button class="tab" data-view="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports</button>
+    <button class="tab" data-view="gate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><line x1="9" y1="9" x2="9" y2="9.01"/><line x1="9" y1="13" x2="9" y2="13.01"/></svg>Gate</button>
     <button class="tab" data-view="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Log Engagement</button>
   </div>
 
@@ -482,6 +484,28 @@ tbody td.op{color:var(--ink);font-weight:500}
       </div>
     </section>
 
+    <section class="view" id="view-gate">
+      <div class="section-h"><h2>Gate Footfall and Revenue</h2><span class="hint">Log the total resort gate (walk-ins plus all groups) by month or day. This drives the walk-in split in Reports.</span></div>
+      <div class="panel repcard" style="max-width:880px">
+        <div class="formgrid">
+          <div class="fg"><label>Period type</label><select id="gType"><option value="Monthly">Monthly</option><option value="Daily">Daily</option></select></div>
+          <div class="fg" id="gMonthWrap"><label>Month</label><input type="month" id="gMonth"></div>
+          <div class="fg" id="gDateWrap" style="display:none"><label>Date</label><input type="date" id="gDate"></div>
+          <div class="fg"><label>Footfall (entrants) *</label><input type="number" id="gFoot" min="0" placeholder="e.g. 11726"></div>
+          <div class="fg"><label>Revenue (PKR) *</label><input type="number" id="gRev" min="0" placeholder="e.g. 27342220"></div>
+          <div class="fg full"><label>Notes</label><input id="gNotes" placeholder="optional, e.g. source or adjustment reason"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end">
+          <button class="btn ghost" id="gReset">Reset</button>
+          <button class="btn amber" id="gSubmit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save Gate Entry</button>
+        </div>
+      </div>
+      <div class="section-h" style="margin-top:28px"><h2>Logged Entries</h2><span class="hint">Re-saving the same month or day overwrites it. Annual baseline years are managed separately.</span></div>
+      <div class="panel repcard" style="max-width:880px">
+        <div class="tablewrap"><table class="rep-table" id="gateTable"><thead><tr><th>Period</th><th>Type</th><th class="num">Footfall</th><th class="num">Revenue</th><th></th></tr></thead><tbody id="gateBody"></tbody></table></div>
+      </div>
+    </section>
+
   </div><!-- /content -->
 </div><!-- /shell -->
 
@@ -650,6 +674,7 @@ document.querySelectorAll(".tab").forEach(t=>{
     $("view-"+t.dataset.view).classList.add("active");
     if(t.dataset.view==="overview") setTimeout(renderCharts,60);
     if(t.dataset.view==="calls") setTimeout(renderCallCharts,60);
+    if(t.dataset.view==="gate"){ if(!$("gMonth").value) $("gMonth").value=todayStr().slice(0,7); renderGate(); }
   };
 });
 
@@ -668,6 +693,7 @@ function renderAll(){
   renderFollowups();
   renderCalls();
   initReports();
+  renderGate();
 }
 
 /* ----- segment switcher ----- */
@@ -1456,6 +1482,57 @@ function exportCSV(rows,fname){
 }
 
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeDrawer();closeModal();}});
+
+/* ---------- Gate logging ---------- */
+function gateToggleType(){
+  const t=$("gType").value;
+  $("gMonthWrap").style.display = t==="Daily" ? "none" : "";
+  $("gDateWrap").style.display  = t==="Daily" ? "" : "none";
+}
+function renderGate(){
+  const body=$("gateBody"); if(!body) return;
+  const rows=(DATA.gate||[]).filter(g=>String(g.periodType).trim()!=="Annual")
+    .slice().sort((a,b)=>String(b.periodKey).localeCompare(String(a.periodKey)));
+  if(!rows.length){ body.innerHTML='<tr><td colspan="5" class="muted" style="padding:14px">No monthly or daily gate entries yet.</td></tr>'; return; }
+  body.innerHTML=rows.map(g=>{
+    const k=esc(String(g.periodKey)), t=esc(String(g.periodType));
+    return '<tr><td class="s">'+k+'</td><td>'+t+'</td><td class="num">'+fmtN(g.footfall)+'</td><td class="num">'+fmtPKR(g.revenue)+'</td>'+
+      '<td class="num" style="white-space:nowrap"><button class="btn ghost xs" onclick="gateEdit(\''+k+'\')">Edit</button> <button class="btn danger xs" onclick="gateDelete(\''+k+'\',\''+t+'\')">Delete</button></td></tr>';
+  }).join("");
+}
+function gateEdit(key){
+  const g=(DATA.gate||[]).find(x=>String(x.periodKey)===key); if(!g) return;
+  const type=String(g.periodType).trim()==="Daily"?"Daily":"Monthly";
+  $("gType").value=type; gateToggleType();
+  if(type==="Daily") $("gDate").value=key; else $("gMonth").value=key;
+  $("gFoot").value=g.footfall||0; $("gRev").value=g.revenue||0; $("gNotes").value=g.notes||"";
+  $("view-gate").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function gateDelete(key,type){
+  if(!confirm("Delete gate entry "+key+"? This cannot be undone.")) return;
+  try{ await postAction({action:"deleteGate",key:key,periodType:type}); renderGate(); toast("Gate entry "+key+" deleted","ok"); }
+  catch(e){ toast(e.message||"Delete failed","err"); }
+}
+function gateReset(){ $("gFoot").value=""; $("gRev").value=""; $("gNotes").value=""; }
+async function gateSubmit(){
+  const type=$("gType").value==="Daily"?"Daily":"Monthly";
+  let date="";
+  if(type==="Daily"){ date=$("gDate").value; if(!date){ toast("Pick a date","err"); return; } }
+  else { const mv=$("gMonth").value; if(!mv){ toast("Pick a month","err"); return; } date=mv+"-01"; }
+  const foot=Number($("gFoot").value||0), rev=Number($("gRev").value||0);
+  if(foot<=0 && rev<=0){ toast("Enter footfall or revenue","err"); return; }
+  const notes=$("gNotes").value.trim();
+  const btn=$("gSubmit"); btn.disabled=true; const old=btn.innerHTML; btn.textContent="Saving...";
+  try{
+    const r=await postAction({action:"logGate",periodType:type,date:date,footfall:foot,revenue:rev,notes:notes});
+    renderGate();
+    toast("Gate "+(r&&r.updated?"updated":"saved")+" for "+(r&&r.key?r.key:date),"ok");
+  }catch(e){ toast(e.message||"Save failed","err"); }
+  finally{ btn.disabled=false; btn.innerHTML=old; }
+}
+$("gType").onchange=gateToggleType;
+$("gReset").onclick=gateReset;
+$("gSubmit").onclick=gateSubmit;
 
 /* ----- boot ----- */
 loadData();
