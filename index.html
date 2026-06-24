@@ -1360,7 +1360,17 @@ function buildReport(){
   const liveGate=gateData.filter(inGatePeriod);
   const gateFoot=liveGate.reduce((s,g)=>s+(g.footfall||0),0);
   const gateRev=liveGate.reduce((s,g)=>s+(g.revenue||0),0);
-  const periodArrived=DATA.engagements.filter(x=>{const d=dOnly(x.visitDate);if(from&&(!d||d<from))return false;if(to&&(!d||d>to))return false;return x.status==="Arrived";});
+  // which dates does the gate actually cover in this period (daily days + monthly months)
+  const coveredDays=new Set(), coveredMonths=new Set();
+  liveGate.forEach(g=>{
+    if(String(g.periodType).trim()==="Daily") coveredDays.add(String(g.periodKey).slice(0,10));
+    else coveredMonths.add(String(g.periodKey).slice(0,7));
+  });
+  const gateCovers=iso=>{ const d=dOnly(iso); if(!d) return false; return coveredDays.has(d) || coveredMonths.has(d.slice(0,7)); };
+  const periodArrivedAll=DATA.engagements.filter(x=>{const d=dOnly(x.visitDate);if(from&&(!d||d<from))return false;if(to&&(!d||d>to))return false;return x.status==="Arrived";});
+  // only booked arrivals on gate-covered dates enter the walk-in split, so operators can never exceed the gate
+  const periodArrived=periodArrivedAll.filter(x=>gateCovers(x.visitDate));
+  const uncovered=periodArrivedAll.length-periodArrived.length;
   const segShare={}; periodArrived.forEach(x=>{const s=fineSegment(x);segShare[s]=segShare[s]||{f:0,r:0};segShare[s].f+=x.effectiveGuests;segShare[s].r+=x.effectiveRevenue;});
   const orgFoot=periodArrived.reduce((s,x)=>s+x.effectiveGuests,0);
   const orgRev=periodArrived.reduce((s,x)=>s+x.effectiveRevenue,0);
@@ -1374,7 +1384,8 @@ function buildReport(){
   gateShareRows+='<tr style="font-weight:600"><td class="s">Total Gate</td><td class="num">'+fmtN(gateFoot)+'</td><td class="num">'+(gateFoot>0?"100%":"\u2013")+'</td><td class="num">'+fmtPKR(gateRev)+'</td><td class="num">'+(gateRev>0?"100%":"\u2013")+'</td></tr>';
   const gateNote=(gateFoot===0&&gateRev===0)
     ? 'No total-gate figures are logged for this period yet, so walk-ins and the percentage split cannot be shown. The rows above are the booked groups recorded in the portal. Log monthly or daily gate entries to populate the comparison.'
-    : 'Walk-ins are the total gate minus all booked groups. Percentages are each channel\u2019s share of the total gate for the selected period.';
+    : ('Walk-ins are the total gate minus all booked groups, compared only on dates the gate covers. Percentages are each channel\u2019s share of the total gate for the selected period.'
+       + (uncovered>0 ? ' Note: '+uncovered+' booked arrival(s) in this period fall on dates with no gate figure logged yet and are left out of this split until that gate data is added.' : ''));
   const baseline=gateData.filter(g=>g.periodType==="Annual").sort((a,b)=>a.periodKey<b.periodKey?-1:1);
   const baseRows=baseline.map(g=>'<tr><td class="s">'+esc(g.periodKey)+'</td><td class="num">'+fmtN(g.footfall)+'</td><td class="num">'+fmtPKR(g.revenue)+'</td></tr>').join("");
 
